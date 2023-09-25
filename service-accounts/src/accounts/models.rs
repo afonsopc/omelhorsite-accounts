@@ -4,7 +4,7 @@ use sqlx::FromRow;
 #[derive(FromRow, Debug)]
 pub struct AccountsTable {
     pub account_id: String,
-    pub name: String,
+    pub username: String,
     pub email: String,
     pub password: String,
     pub language: String,
@@ -17,7 +17,7 @@ pub struct AccountsTable {
 pub struct AccountChangesTable {
     pub account_change_id: String,
     pub account_id: String,
-    pub name: Option<String>,
+    pub username: Option<String>,
     pub email: Option<String>,
     pub password: Option<String>,
     pub verified: Option<bool>,
@@ -27,7 +27,7 @@ pub struct AccountChangesTable {
 
 #[derive(Debug)]
 pub struct AccountChange {
-    pub name: Option<String>,
+    pub username: Option<String>,
     pub email: Option<String>,
     pub password: Option<String>,
     pub verified: Option<bool>,
@@ -36,7 +36,7 @@ pub struct AccountChange {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Account {
-    pub name: String,
+    pub username: String,
     pub email: String,
     pub password: String,
     pub language: String,

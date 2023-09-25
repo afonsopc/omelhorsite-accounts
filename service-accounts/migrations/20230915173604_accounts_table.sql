@@ -1,6 +1,6 @@
 CREATE TABLE accounts (
     "account_id"            TEXT NOT NULL UNIQUE,
-    "name"                  TEXT NOT NULL,
+    "username"                  TEXT NOT NULL,
     "email"                 TEXT NOT NULL UNIQUE,
     "password"              TEXT NOT NULL,
     "language"              TEXT NOT NULL,

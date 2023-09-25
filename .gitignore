@@ -1,4 +1,2 @@
 /.git
-/service-accounts/target
-/service-accounts/config.env
-/service-accounts/database
+/service-accounts-database

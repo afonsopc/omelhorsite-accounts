@@ -26,7 +26,7 @@ pub async fn get_account_from_id(account_id: &String, database_pool: &PgPool) ->
     };
 
     let account = Account {
-        name: account_row.name,
+        username: account_row.username,
         email: account_row.email,
         password: account_row.password,
         language: account_row.language,
@@ -89,7 +89,7 @@ pub async fn get_account_from_token(token: &String, database_pool: &PgPool) -> R
     };
 
     let account = Account {
-        name: account_row.name,
+        username: account_row.username,
         email: account_row.email,
         password: account_row.password,
         language: account_row.language,
@@ -121,7 +121,7 @@ pub async fn get_account_from_credentials(
     compare_plain_to_encrypted_string(password, &account_row.password).await?;
 
     let account = Account {
-        name: account_row.name,
+        username: account_row.username,
         email: account_row.email,
         password: account_row.password,
         language: account_row.language,
@@ -157,7 +157,7 @@ pub async fn get_account_change(
     };
 
     let account_change = AccountChange {
-        name: account_change_row.name,
+        username: account_change_row.username,
         email: account_change_row.email,
         password: account_change_row.password,
         verified: account_change_row.verified,

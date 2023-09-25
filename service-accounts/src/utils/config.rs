@@ -25,6 +25,7 @@ pub struct AppConfig {
     pub account_confirmation_email_title_message: String,
     pub max_body_size: usize,
     pub server_url: String,
+    pub process_id_length: usize,
 }
 
 impl AppConfig {
@@ -65,6 +66,7 @@ impl AppConfig {
             )?,
             max_body_size: environment_variable("MAX_BODY_SIZE")?,
             server_url: environment_variable("SERVER_URL")?,
+            process_id_length: environment_variable("PROCESS_ID_LENGTH")?,
         })
     }
 }

@@ -28,7 +28,7 @@ pub async fn create_account_change(
     let account_change_row = AccountChangesTable {
         account_change_id,
         account_id: account_id.to_owned(),
-        name: account_change.name.to_owned(),
+        username: account_change.username.to_owned(),
         email: account_change.email.to_owned(),
         password: account_change_password,
         verified: account_change.verified,
@@ -38,7 +38,7 @@ pub async fn create_account_change(
 
     let sql = r#"
         INSERT INTO account_changes (
-            account_change_id, account_id, name, email, password, verified, step, creation_timestamp
+            account_change_id, account_id, username, email, password, verified, step, creation_timestamp
         ) VALUES (
             $1, $2, $3, $4, $5, $6, $7, $8
         )
@@ -47,7 +47,7 @@ pub async fn create_account_change(
     match query(sql)
         .bind(&account_change_row.account_change_id)
         .bind(&account_change_row.account_id)
-        .bind(&account_change_row.name)
+        .bind(&account_change_row.username)
         .bind(&account_change_row.email)
         .bind(&account_change_row.password)
         .bind(account_change_row.verified)
@@ -120,7 +120,7 @@ pub async fn confirm_account_change(
     let sql = r#"
             UPDATE accounts 
             SET
-                name = CASE WHEN $1 IS NOT NULL THEN $1 ELSE name END,
+                username = CASE WHEN $1 IS NOT NULL THEN $1 ELSE username END,
                 email = CASE WHEN $2 IS NOT NULL THEN $2 ELSE email END,
                 password = CASE WHEN $3 IS NOT NULL THEN $3 ELSE password END,
                 verified = CASE WHEN $4 IS NOT NULL THEN $4 ELSE verified END,
@@ -129,7 +129,7 @@ pub async fn confirm_account_change(
         "#;
 
     match query(sql)
-        .bind(&account_change_row.name)
+        .bind(&account_change_row.username)
         .bind(&account_change_row.email)
         .bind(&account_change_row.password)
         .bind(account_change_row.verified)

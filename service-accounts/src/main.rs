@@ -1,23 +1,34 @@
 mod accounts;
 mod error;
 mod prelude;
+mod routes;
 mod utils;
 
 use accounts::delete::{delete_expired_account_info_changes, delete_expired_unverified_accounts};
+use axum::{
+    extract::DefaultBodyLimit,
+    routing::{get, post},
+    Router,
+};
 use prelude::*;
+use rand::Rng;
 use sqlx::{migrate, PgPool};
-use std::time::Duration;
+use std::{net::ToSocketAddrs, time::Duration};
 use tokio::time::sleep;
+use tower_http::cors::{Any, CorsLayer};
 use utils::config::AppConfig;
 
-use crate::accounts::{
-    create::create_account,
-    delete::{
-        delete_account, delete_account_change, delete_all_account_changes, delete_all_accounts,
+use crate::{
+    accounts::{
+        create::create_account,
+        delete::{
+            delete_account, delete_account_change, delete_all_account_changes, delete_all_accounts,
+        },
+        get::get_account_change,
+        models::{Account, AccountChange},
+        update::{confirm_account_change, create_account_change},
     },
-    get::get_account_change,
-    models::{Account, AccountChange},
-    update::{confirm_account_change, create_account_change},
+    utils::random,
 };
 
 #[derive(Clone)]
@@ -31,6 +42,9 @@ async fn main() -> Result<()> {
     let database_url = &app_config.database_url;
     let account_confirmation_lifespan = app_config.account_confirmation_lifespan;
     let check_timeout = app_config.check_timeout;
+    let check_timeout = app_config.check_timeout;
+    let max_body_size = app_config.max_body_size;
+    let server_url = app_config.server_url;
 
     println!("Connecting to Database...");
     let database_pool = PgPool::connect(database_url).await.unwrap();
@@ -38,133 +52,30 @@ async fn main() -> Result<()> {
 
     migrate!().run(&database_pool).await.unwrap();
 
-    // Apagar todas as contas
-    delete_all_account_changes(&database_pool).await.unwrap();
-    delete_all_accounts(&database_pool).await.unwrap();
-
-    // Criar conta
-    let account = Account {
-        name: "Afonso".to_owned(),
-        email: "afonso@mail.pt".to_owned(),
-        password: "teste123".to_owned(),
-        language: "pt".to_owned(),
+    let app_state = AppState {
+        database_pool: database_pool.clone(),
     };
-    let account_id = create_account(&account, &database_pool).await.unwrap();
 
-    // Create verification process
-    let account_confirmation_change = AccountChange {
-        name: None,
-        email: None,
-        password: None,
-        verified: Some(true),
-        step: None,
-    };
-    let account_confirmation_code =
-        create_account_change(&account_id, &account_confirmation_change, &database_pool)
-            .await
-            .unwrap();
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
 
-    // Cofirm account
-    confirm_account_change(&account_id, &account_confirmation_code, &database_pool)
-        .await
-        .unwrap();
+    let app = Router::new()
+        .route(
+            "/accounts/create",
+            post(routes::accounts::create::create_account_request),
+        )
+        .route("/", get(routes::root::root))
+        .layer(DefaultBodyLimit::max(max_body_size))
+        .with_state(app_state.clone())
+        .layer(cors);
 
-    // Change the name
-    let account_name_change = AccountChange {
-        name: Some("Carlos".to_owned()),
-        email: None,
-        password: None,
-        verified: None,
-        step: None,
-    };
-    let account_name_change_confirmation_code =
-        create_account_change(&account_id, &account_name_change, &database_pool)
-            .await
-            .unwrap();
+    let addr = server_url.to_socket_addrs().unwrap().next().unwrap();
 
-    confirm_account_change(
-        &account_id,
-        &account_name_change_confirmation_code,
-        &database_pool,
-    )
-    .await
-    .unwrap();
+    let server = axum::Server::bind(&addr).serve(app.into_make_service());
 
-    // Change the password
-    let account_password_change = AccountChange {
-        name: None,
-        email: None,
-        password: Some("carlos123".to_owned()),
-        verified: None,
-        step: None,
-    };
-    let account_password_change_confirmation_code =
-        create_account_change(&account_id, &account_password_change, &database_pool)
-            .await
-            .unwrap();
-
-    confirm_account_change(
-        &account_id,
-        &account_password_change_confirmation_code,
-        &database_pool,
-    )
-    .await
-    .unwrap();
-
-    // Change the email
-    let account_email_change = AccountChange {
-        name: None,
-        email: Some("carlos@pagman.org".to_owned()),
-        password: None,
-        verified: None,
-        step: Some(1),
-    };
-    let account_email_change_confirmation_code =
-        create_account_change(&account_id, &account_email_change, &database_pool)
-            .await
-            .unwrap();
-
-    let account_email_change_step_1 = get_account_change(
-        &account_id,
-        &account_email_change_confirmation_code,
-        &database_pool,
-    )
-    .await
-    .unwrap();
-
-    let account_email_change_step_2_confirmation_code: String =
-        if let Some(step) = account_email_change_step_1.step {
-            if step == 1 {
-                let account_email_change_step_2 = AccountChange {
-                    name: None,
-                    email: account_email_change_step_1.email.clone(),
-                    password: None,
-                    verified: None,
-                    step: Some(2),
-                };
-                delete_account_change(&account_email_change_confirmation_code, &database_pool)
-                    .await
-                    .unwrap();
-                create_account_change(&account_id, &account_email_change_step_2, &database_pool)
-                    .await
-                    .unwrap()
-            } else {
-                panic!("Account email change is not in step 1");
-            }
-        } else {
-            panic!("Account email change step is not Some");
-        };
-
-    confirm_account_change(
-        &account_id,
-        &account_email_change_step_2_confirmation_code,
-        &database_pool,
-    )
-    .await
-    .unwrap();
-
-    // Delete account
-    delete_account(&account_id, &database_pool).await.unwrap();
+    migrate!().run(&database_pool).await.unwrap();
 
     // Check loop
     tokio::spawn(async move {
@@ -179,6 +90,11 @@ async fn main() -> Result<()> {
         }
     });
 
+    println!("Listening on: http://{}", addr);
+    if let Err(err) = server.await {
+        panic!("Server error: {err}");
+    };
+
     Ok(())
 }
 
@@ -189,8 +105,31 @@ async fn check_loop(account_confirmation_lifespan: i64, database_pool: &PgPool) 
     Ok(())
 }
 
+fn get_random_color() -> String {
+    let colors = [
+        "\x1b[1;91m",
+        "\x1b[1;92m",
+        "\x1b[1;93m",
+        "\x1b[1;94m",
+        "\x1b[1;95m",
+        "\x1b[1;96m",
+    ];
+    let mut rng = rand::thread_rng();
+    let indice = rng.gen_range(0..colors.len());
+    colors[indice].to_string()
+}
+
+pub fn get_process_id() -> String {
+    let app_config = AppConfig::load_from_env().unwrap();
+    let process_id_length = app_config.process_id_length;
+    let color = get_random_color();
+    let process_id = random::get_random_string(process_id_length);
+
+    f!("{color}{process_id}\x1b[0m")
+}
+
 // let account_basic_info = AccountBasicInfo {
-//     name: "Afonso".to_string(),
+//     username: "Afonso".to_string(),
 //     email: "afonso@mail.pt".to_string(),
 //     password: "passwordsecreta".to_string(),
 //     language: "pt".to_string(),
@@ -215,7 +154,7 @@ async fn check_loop(account_confirmation_lifespan: i64, database_pool: &PgPool) 
 
 // let confirmed_account_info = Account {
 //     account_id: None,
-//     name: None,
+//     username: None,
 //     email: None,
 //     password: None,
 //     language: None,
@@ -245,7 +184,7 @@ async fn check_loop(account_confirmation_lifespan: i64, database_pool: &PgPool) 
 
 // let new_account_info = Account {
 //     account_id: None,
-//     name: None,
+//     username: None,
 //     email: Some("afonso@pagman.org".to_string()),
 //     password: None,
 //     language: None,
@@ -272,7 +211,7 @@ async fn check_loop(account_confirmation_lifespan: i64, database_pool: &PgPool) 
 // let current_timestamp = Utc::now().timestamp().to_string();
 // let account = Account {
 //     account_id: "1232123422223".to_string(),
-//     name: "Fernando".to_string(),
+//     username: "Fernando".to_string(),
 //     email: "fernando@222342mail.pt".to_string(),
 //     password: "fernando123".to_string(),
 //     language: "pt".to_string(),
@@ -287,7 +226,7 @@ async fn check_loop(account_confirmation_lifespan: i64, database_pool: &PgPool) 
 
 // let new_account = Account {
 //     account_id: "".to_string(),
-//     name: "Manuel O Maluco".to_string(),
+//     username: "Manuel O Maluco".to_string(),
 //     email: "".to_string(),
 //     password: "".to_string(),
 //     language: "".to_string(),

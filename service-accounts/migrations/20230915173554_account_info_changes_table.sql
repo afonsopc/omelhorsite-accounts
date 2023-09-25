@@ -1,7 +1,7 @@
 CREATE TABLE account_changes (
     "account_change_id"      TEXT NOT NULL UNIQUE,
     "account_id"             TEXT NOT NULL UNIQUE,
-    "name"                   TEXT,
+    "username"                   TEXT,
     "email"                  TEXT UNIQUE,
     "password"               TEXT,
     "verified"               BOOLEAN,

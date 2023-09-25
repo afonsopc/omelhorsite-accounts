@@ -7,7 +7,7 @@ services:
     # expose:
     #   - 3000
     volumes:
-      - ./service-accounts/database:/database:rw
+      - ./service-accounts-database/database:/database:rw
     ports:
       - 3001:3001
     environment:

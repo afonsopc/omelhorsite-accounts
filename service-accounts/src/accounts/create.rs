@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use crate::utils::encryption::encrypt_string;
-use crate::utils::random::get_random_string;
+use crate::utils::random::{get_random_numbers, get_random_string};
 use crate::utils::time::get_current_timestamp;
 use crate::{accounts::models::Account, utils::config::AppConfig};
 use sqlx::{query, query_as, PgPool, Postgres};
@@ -57,7 +57,7 @@ pub async fn create_account_change_id(database_pool: &PgPool) -> Result<String> 
             return Err(Error::CreateIdRetryLimitExceeded());
         };
 
-        let random_id = get_random_string(account_info_change_ids_length);
+        let random_id = get_random_numbers(account_info_change_ids_length);
 
         match query_as::<Postgres, AccountsTable>(sql)
             .bind(&random_id)
@@ -88,7 +88,7 @@ pub async fn create_account(account: &Account, database_pool: &PgPool) -> Result
 
     let account_row = AccountsTable {
         account_id: account_id.clone(),
-        name: account.name.to_owned(),
+        username: account.username.to_owned(),
         email: account.email.to_owned(),
         password: encrypted_password,
         language: account.language.to_owned(),
@@ -100,7 +100,7 @@ pub async fn create_account(account: &Account, database_pool: &PgPool) -> Result
     let sql_query = r#"
         INSERT INTO accounts (
             account_id,
-            name,
+            username,
             email,
             password,
             language,
@@ -112,7 +112,7 @@ pub async fn create_account(account: &Account, database_pool: &PgPool) -> Result
 
     match query(sql_query)
         .bind(&account_row.account_id)
-        .bind(&account_row.name)
+        .bind(&account_row.username)
         .bind(&account_row.email)
         .bind(&account_row.password)
         .bind(&account_row.language)
