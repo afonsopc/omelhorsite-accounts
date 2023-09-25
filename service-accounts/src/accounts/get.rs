@@ -1,5 +1,5 @@
 use super::models::{
-    Account, AccountChange, AccountChangesTable, AccountTokenClaims, AccountsTable,
+    Account, AccountChange, AccountChangesTable, AccountTokenClaims, AccountWithId, AccountsTable,
 };
 use crate::{
     prelude::*,
@@ -10,30 +10,37 @@ use crate::{
 };
 use sqlx::{query_as, PgPool, Postgres};
 
-pub async fn get_account_from_id(account_id: &String, database_pool: &PgPool) -> Result<Account> {
-    let sql = r#"
-        SELECT * FROM accounts WHERE account_id = $1
-    "#;
+// pub async fn get_account_from_id(
+//     account_id: &String,
+//     database_pool: &PgPool,
+// ) -> Result<AccountWithId> {
+//     let sql = r#"
+//         SELECT * FROM accounts WHERE account_id = $1
+//     "#;
 
-    let account_row = match query_as::<Postgres, AccountsTable>(sql)
-        .bind(account_id)
-        .fetch_one(database_pool)
-        .await
-    {
-        Ok(value) => value,
-        Err(sqlx::Error::RowNotFound) => return Err(Error::AccountNotFound(sql.to_string())),
-        Err(err) => return Err(Error::GetAccountFromIdQuery(err.to_string())),
-    };
+//     let account_row = match query_as::<Postgres, AccountsTable>(sql)
+//         .bind(account_id)
+//         .fetch_one(database_pool)
+//         .await
+//     {
+//         Ok(value) => value,
+//         Err(sqlx::Error::RowNotFound) => return Err(Error::AccountNotFound(sql.to_string())),
+//         Err(err) => return Err(Error::GetAccountFromIdQuery(err.to_string())),
+//     };
 
-    let account = Account {
-        username: account_row.username,
-        email: account_row.email,
-        password: account_row.password,
-        language: account_row.language,
-    };
+//     let account = Account {
+//         username: account_row.username,
+//         email: account_row.email,
+//         password: account_row.password,
+//     };
 
-    Ok(account)
-}
+//     let account_with_id = AccountWithId {
+//         account_id: account_row.account_id,
+//         account,
+//     };
+
+//     Ok(account_with_id)
+// }
 
 pub async fn get_account_token(account_id: &String, database_pool: &PgPool) -> Result<String> {
     let sql = r#"
@@ -61,7 +68,7 @@ pub async fn get_account_token(account_id: &String, database_pool: &PgPool) -> R
     Ok(token)
 }
 
-pub async fn get_account_from_token(token: &String, database_pool: &PgPool) -> Result<Account> {
+pub async fn get_account_from_token(token: &str, database_pool: &PgPool) -> Result<AccountWithId> {
     let account_token_claims = decode_jwt::<AccountTokenClaims>(token)?;
 
     let account_id = &account_token_claims.account_id;
@@ -92,17 +99,21 @@ pub async fn get_account_from_token(token: &String, database_pool: &PgPool) -> R
         username: account_row.username,
         email: account_row.email,
         password: account_row.password,
-        language: account_row.language,
     };
 
-    Ok(account)
+    let account_with_id = AccountWithId {
+        account_id: account_row.account_id,
+        account,
+    };
+
+    Ok(account_with_id)
 }
 
 pub async fn get_account_from_credentials(
     email: &String,
     password: &String,
     database_pool: &PgPool,
-) -> Result<Account> {
+) -> Result<AccountWithId> {
     let sql = r#"
         SELECT * FROM accounts 
         WHERE email = $1 
@@ -124,10 +135,14 @@ pub async fn get_account_from_credentials(
         username: account_row.username,
         email: account_row.email,
         password: account_row.password,
-        language: account_row.language,
     };
 
-    Ok(account)
+    let account_with_id = AccountWithId {
+        account_id: account_row.account_id,
+        account,
+    };
+
+    Ok(account_with_id)
 }
 
 pub async fn get_account_change(

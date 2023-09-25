@@ -24,7 +24,7 @@ where
     Ok(token)
 }
 
-pub fn decode_jwt<T>(token: &String) -> Result<T>
+pub fn decode_jwt<T>(token: &str) -> Result<T>
 where
     T: Serialize + for<'a> Deserialize<'a> + Send + Sync,
 {

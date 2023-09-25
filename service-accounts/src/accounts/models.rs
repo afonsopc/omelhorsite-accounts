@@ -7,7 +7,6 @@ pub struct AccountsTable {
     pub username: String,
     pub email: String,
     pub password: String,
-    pub language: String,
     pub verified: bool,
     pub last_change_timestamp: String,
     pub creation_timestamp: String,
@@ -39,7 +38,12 @@ pub struct Account {
     pub username: String,
     pub email: String,
     pub password: String,
-    pub language: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AccountWithId {
+    pub account_id: String,
+    pub account: Account,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

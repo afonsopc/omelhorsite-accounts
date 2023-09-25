@@ -14,20 +14,6 @@ pub fn get_random_string(length: usize) -> String {
     random_string
 }
 
-pub fn get_random_characters(length: usize) -> String {
-    let characters: &[u8] = b"abcdefghijklmnopqrstuvwxyz";
-
-    let mut rng = thread_rng();
-    let random_characters: String = (0..length)
-        .map(|_| {
-            let idx = rng.gen_range(0..characters.len());
-            characters[idx] as char
-        })
-        .collect();
-
-    random_characters
-}
-
 pub fn get_random_numbers(length: usize) -> String {
     let mut rng = thread_rng();
     let random_numbers: String = (0..length)

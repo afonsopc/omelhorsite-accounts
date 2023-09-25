@@ -91,7 +91,6 @@ pub async fn create_account(account: &Account, database_pool: &PgPool) -> Result
         username: account.username.to_owned(),
         email: account.email.to_owned(),
         password: encrypted_password,
-        language: account.language.to_owned(),
         verified: false,
         last_change_timestamp: current_timestamp.clone(),
         creation_timestamp: current_timestamp,
@@ -103,11 +102,10 @@ pub async fn create_account(account: &Account, database_pool: &PgPool) -> Result
             username,
             email,
             password,
-            language,
             verified,
             last_change_timestamp,
             creation_timestamp
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
     "#;
 
     match query(sql_query)
@@ -115,7 +113,6 @@ pub async fn create_account(account: &Account, database_pool: &PgPool) -> Result
         .bind(&account_row.username)
         .bind(&account_row.email)
         .bind(&account_row.password)
-        .bind(&account_row.language)
         .bind(account_row.verified)
         .bind(&account_row.last_change_timestamp)
         .bind(&account_row.creation_timestamp)

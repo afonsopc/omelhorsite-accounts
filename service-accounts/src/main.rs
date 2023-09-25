@@ -7,7 +7,7 @@ mod utils;
 use accounts::delete::{delete_expired_account_info_changes, delete_expired_unverified_accounts};
 use axum::{
     extract::DefaultBodyLimit,
-    routing::{get, post},
+    routing::{delete, get, patch, post},
     Router,
 };
 use prelude::*;
@@ -18,18 +18,7 @@ use tokio::time::sleep;
 use tower_http::cors::{Any, CorsLayer};
 use utils::config::AppConfig;
 
-use crate::{
-    accounts::{
-        create::create_account,
-        delete::{
-            delete_account, delete_account_change, delete_all_account_changes, delete_all_accounts,
-        },
-        get::get_account_change,
-        models::{Account, AccountChange},
-        update::{confirm_account_change, create_account_change},
-    },
-    utils::random,
-};
+use crate::utils::random;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -38,10 +27,11 @@ pub struct AppState {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    todo!("Fazer o login e emails mais especificos...");
+
     let app_config = AppConfig::load_from_env().unwrap();
     let database_url = &app_config.database_url;
     let account_confirmation_lifespan = app_config.account_confirmation_lifespan;
-    let check_timeout = app_config.check_timeout;
     let check_timeout = app_config.check_timeout;
     let max_body_size = app_config.max_body_size;
     let server_url = app_config.server_url;
@@ -65,6 +55,50 @@ async fn main() -> Result<()> {
         .route(
             "/accounts/create",
             post(routes::accounts::create::create_account_request),
+        )
+        .route(
+            "/accounts/create/confirm",
+            post(routes::accounts::create::confirm_account_request),
+        )
+        .route(
+            "/accounts/update/username",
+            patch(routes::accounts::update::update_username_request),
+        )
+        .route(
+            "/accounts/update/username/confirm",
+            post(routes::accounts::update::confirm_update_username_request),
+        )
+        .route(
+            "/accounts/update/password",
+            patch(routes::accounts::update::update_password_request),
+        )
+        .route(
+            "/accounts/update/password/confirm",
+            post(routes::accounts::update::confirm_update_password_request),
+        )
+        .route(
+            "/accounts/update/email",
+            patch(routes::accounts::update::update_email_request),
+        )
+        .route(
+            "/accounts/update/email/one/confirm",
+            post(routes::accounts::update::confirm_update_email_step_one_request),
+        )
+        .route(
+            "/accounts/update/email/two/confirm",
+            post(routes::accounts::update::confirm_update_email_step_two_request),
+        )
+        .route(
+            "/accounts/get/account",
+            get(routes::accounts::get::get_account_request),
+        )
+        .route(
+            "/accounts/delete/account",
+            delete(routes::accounts::delete::delete_account_request),
+        )
+        .route(
+            "/accounts/delete/account/confirm",
+            post(routes::accounts::delete::confirm_delete_account_request),
         )
         .route("/", get(routes::root::root))
         .layer(DefaultBodyLimit::max(max_body_size))
