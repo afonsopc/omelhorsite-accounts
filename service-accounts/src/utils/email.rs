@@ -14,7 +14,7 @@ pub async fn send_email(
     body_html: &String,
 ) -> Result<()> {
     let app_config = config::AppConfig::load_from_env().unwrap();
-    let email_username = app_config.email_username;
+    let email_username = app_config.name;
     let email_address = app_config.email_address;
     let email_password = app_config.email_password;
     let smtp_relay = app_config.smtp_relay;
@@ -61,7 +61,9 @@ pub async fn send_confirmation_email(
     confirmation_code: &str,
 ) -> Result<()> {
     let app_config = config::AppConfig::load_from_env().unwrap();
+    let name = app_config.name;
     let confirmation_email_body = app_config.confirmation_email_body;
+    let email_name_placeholder = app_config.email_name_placeholder;
     let confirmation_email_title_message_placeholder =
         app_config.confirmation_email_title_message_placeholder;
     let confirmation_email_confirmation_code_placeholder =
@@ -69,6 +71,7 @@ pub async fn send_confirmation_email(
 
     let body = confirmation_email_body
         .replace(&confirmation_email_title_message_placeholder, title_message)
+        .replace(&email_name_placeholder, &name)
         .replace(
             &confirmation_email_confirmation_code_placeholder,
             confirmation_code,

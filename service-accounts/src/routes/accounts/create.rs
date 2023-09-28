@@ -15,24 +15,23 @@ use crate::{
     },
     get_process_id,
     prelude::*,
-    routes::accounts::models::CreateAccountResponse,
+    routes::accounts::models::Token,
     utils::{config::AppConfig, email::send_confirmation_email},
     AppState,
 };
 
-use super::models::{ConfirmAccountRequest, ConfirmAccountResponse, CreateAccountRequest};
+use super::models::{AccountInfo, ConfirmationCode};
 
 pub async fn create_account_request(
     State(app_state): State<AppState>,
-    Json(create_account_request): Json<CreateAccountRequest>,
+    Json(create_account_request): Json<AccountInfo>,
 ) -> impl IntoResponse {
     let process_id = get_process_id();
     println!("{process_id} - Starting \"account create\" request");
-    println!("{process_id} - Account: \"{create_account_request:?}\"");
 
     let app_config = AppConfig::load_from_env().unwrap();
-    let email_subject = app_config.account_confirmation_email_subject;
-    let email_title = app_config.account_confirmation_email_title_message;
+    let email_subject = app_config.account_creation_confirmation_email_subject;
+    let email_title = app_config.account_creation_confirmation_email_title_message;
 
     let database_pool = &app_state.database_pool;
 
@@ -110,7 +109,7 @@ pub async fn create_account_request(
         }
     };
 
-    let response = CreateAccountResponse { token };
+    let response = Token { token };
 
     (StatusCode::OK, Json(response)).into_response()
 }
@@ -118,7 +117,7 @@ pub async fn create_account_request(
 pub async fn confirm_account_request(
     TypedHeader(authorization): TypedHeader<Authorization<Bearer>>,
     State(app_state): State<AppState>,
-    Json(confirm_account_request): Json<ConfirmAccountRequest>,
+    Json(confirm_account_request): Json<ConfirmationCode>,
 ) -> impl IntoResponse {
     let process_id = get_process_id();
     println!("{process_id} - Starting \"account confirm\" request");
@@ -164,7 +163,7 @@ pub async fn confirm_account_request(
         }
     };
 
-    let response = ConfirmAccountResponse { token };
+    let response = Token { token };
 
     (StatusCode::OK, Json(response)).into_response()
 }

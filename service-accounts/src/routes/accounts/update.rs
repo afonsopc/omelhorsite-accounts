@@ -14,31 +14,24 @@ use crate::{
         update::{confirm_account_change, create_account_change},
     },
     get_process_id,
-    routes::accounts::models::{
-        ConfirmUpdateEmailStepTwoResponse, ConfirmUpdatePasswordResponse,
-        ConfirmUpdateUsernameResponse,
-    },
+    routes::accounts::models::Token,
     utils::{config::AppConfig, email::send_confirmation_email},
     AppState,
 };
 
-use super::models::{
-    ConfirmUpdateEmailStepOneRequest, ConfirmUpdateEmailStepTwoRequest,
-    ConfirmUpdatePasswordRequest, ConfirmUpdateUsernameRequest, UpdateEmailRequest,
-    UpdatePasswordRequest, UpdateUsernameRequest,
-};
+use super::models::{ConfirmationCode, Email, Password, Username};
 
 pub async fn update_username_request(
     TypedHeader(authorization): TypedHeader<Authorization<Bearer>>,
     State(app_state): State<AppState>,
-    Json(body): Json<UpdateUsernameRequest>,
+    Json(body): Json<Username>,
 ) -> impl IntoResponse {
     let process_id = get_process_id();
     println!("{process_id} - Starting \"account update username\" request");
 
     let app_config = AppConfig::load_from_env().unwrap();
-    let email_subject = app_config.account_info_change_confirmation_email_subject;
-    let email_title = app_config.account_info_change_confirmation_email_title_message;
+    let email_subject = app_config.account_change_username_confirmation_email_subject;
+    let email_title = app_config.account_change_username_confirmation_email_title_message;
 
     let database_pool = &app_state.database_pool;
 
@@ -101,7 +94,7 @@ pub async fn update_username_request(
 pub async fn confirm_update_username_request(
     TypedHeader(authorization): TypedHeader<Authorization<Bearer>>,
     State(app_state): State<AppState>,
-    Json(body): Json<ConfirmUpdateUsernameRequest>,
+    Json(body): Json<ConfirmationCode>,
 ) -> impl IntoResponse {
     let process_id = get_process_id();
     println!("{process_id} - Starting \"account update username confirmation\" request");
@@ -147,7 +140,7 @@ pub async fn confirm_update_username_request(
         }
     };
 
-    let response = ConfirmUpdateUsernameResponse { token };
+    let response = Token { token };
 
     (StatusCode::OK, Json(response)).into_response()
 }
@@ -155,14 +148,14 @@ pub async fn confirm_update_username_request(
 pub async fn update_password_request(
     TypedHeader(authorization): TypedHeader<Authorization<Bearer>>,
     State(app_state): State<AppState>,
-    Json(body): Json<UpdatePasswordRequest>,
+    Json(body): Json<Password>,
 ) -> impl IntoResponse {
     let process_id = get_process_id();
     println!("{process_id} - Starting \"account update password\" request");
 
     let app_config = AppConfig::load_from_env().unwrap();
-    let email_subject = app_config.account_info_change_confirmation_email_subject;
-    let email_title = app_config.account_info_change_confirmation_email_title_message;
+    let email_subject = app_config.account_change_password_confirmation_email_subject;
+    let email_title = app_config.account_change_password_confirmation_email_title_message;
 
     let database_pool = &app_state.database_pool;
 
@@ -225,7 +218,7 @@ pub async fn update_password_request(
 pub async fn confirm_update_password_request(
     TypedHeader(authorization): TypedHeader<Authorization<Bearer>>,
     State(app_state): State<AppState>,
-    Json(body): Json<ConfirmUpdatePasswordRequest>,
+    Json(body): Json<ConfirmationCode>,
 ) -> impl IntoResponse {
     let process_id = get_process_id();
     println!("{process_id} - Starting \"account update password confirmation\" request");
@@ -271,7 +264,7 @@ pub async fn confirm_update_password_request(
         }
     };
 
-    let response = ConfirmUpdatePasswordResponse { token };
+    let response = Token { token };
 
     (StatusCode::OK, Json(response)).into_response()
 }
@@ -279,14 +272,14 @@ pub async fn confirm_update_password_request(
 pub async fn update_email_request(
     TypedHeader(authorization): TypedHeader<Authorization<Bearer>>,
     State(app_state): State<AppState>,
-    Json(body): Json<UpdateEmailRequest>,
+    Json(body): Json<Email>,
 ) -> impl IntoResponse {
     let process_id = get_process_id();
     println!("{process_id} - Starting \"account update email\" request");
 
     let app_config = AppConfig::load_from_env().unwrap();
-    let email_subject = app_config.account_info_change_confirmation_email_subject;
-    let email_title = app_config.account_info_change_confirmation_email_title_message;
+    let email_subject = app_config.account_change_email_one_confirmation_email_subject;
+    let email_title = app_config.account_change_email_one_confirmation_email_title_message;
 
     let database_pool = &app_state.database_pool;
 
@@ -349,14 +342,14 @@ pub async fn update_email_request(
 pub async fn confirm_update_email_step_one_request(
     TypedHeader(authorization): TypedHeader<Authorization<Bearer>>,
     State(app_state): State<AppState>,
-    Json(body): Json<ConfirmUpdateEmailStepOneRequest>,
+    Json(body): Json<ConfirmationCode>,
 ) -> impl IntoResponse {
     let process_id = get_process_id();
     println!("{process_id} - Starting \"account update email step one confirmation\" request");
 
     let app_config = AppConfig::load_from_env().unwrap();
-    let email_subject = app_config.account_info_change_confirmation_email_subject;
-    let email_title = app_config.account_info_change_confirmation_email_title_message;
+    let email_subject = app_config.account_change_email_two_confirmation_email_subject;
+    let email_title = app_config.account_change_email_two_confirmation_email_title_message;
 
     let database_pool = app_state.database_pool;
 
@@ -466,7 +459,7 @@ pub async fn confirm_update_email_step_one_request(
 pub async fn confirm_update_email_step_two_request(
     TypedHeader(authorization): TypedHeader<Authorization<Bearer>>,
     State(app_state): State<AppState>,
-    Json(body): Json<ConfirmUpdateEmailStepTwoRequest>,
+    Json(body): Json<ConfirmationCode>,
 ) -> impl IntoResponse {
     let process_id = get_process_id();
     println!("{process_id} - Starting \"account update email step two confirmation\" request");
@@ -551,7 +544,7 @@ pub async fn confirm_update_email_step_two_request(
         }
     };
 
-    let response = ConfirmUpdateEmailStepTwoResponse { token };
+    let response = Token { token };
 
     (StatusCode::OK, Json(response)).into_response()
 }

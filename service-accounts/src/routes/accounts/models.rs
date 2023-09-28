@@ -1,85 +1,52 @@
 use serde::{Deserialize, Serialize};
 
-use crate::accounts::models::Account;
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Token {
+    pub token: String,
+}
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct CreateAccountRequest {
+pub struct ConfirmationCode {
+    pub confirmation_code: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AccountInfo {
     pub username: String,
     pub email: String,
     pub password: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct CreateAccountResponse {
-    pub token: String,
+pub struct AccountInfoWithoutPassword {
+    pub username: String,
+    pub email: String,
+    pub creation_timestamp: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ConfirmAccountRequest {
-    pub confirmation_code: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ConfirmAccountResponse {
-    pub token: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ConfirmDeleteAccountRequest {
-    pub confirmation_code: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct UpdateUsernameRequest {
+pub struct Username {
     pub username: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ConfirmUpdateUsernameRequest {
-    pub confirmation_code: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ConfirmUpdateUsernameResponse {
-    pub token: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct UpdatePasswordRequest {
-    pub password: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ConfirmUpdatePasswordRequest {
-    pub confirmation_code: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ConfirmUpdatePasswordResponse {
-    pub token: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct UpdateEmailRequest {
+pub struct Email {
     pub email: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ConfirmUpdateEmailStepOneRequest {
+pub struct Password {
+    pub password: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AuthenticationCredentials {
+    pub email: String,
+    pub password: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EmailAndConfirmationCode {
+    pub email: String,
     pub confirmation_code: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ConfirmUpdateEmailStepTwoRequest {
-    pub confirmation_code: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ConfirmUpdateEmailStepTwoResponse {
-    pub token: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GetAccountResponse {
-    pub account: Account,
 }

@@ -20,12 +20,6 @@ pub enum Error {
     #[error("Delete account change query error: \"{0}\"")]
     DeleteAccountChangeQuery(String),
 
-    #[error("Delete all account changes query error: \"{0}\"")]
-    DeleteAllAccountChangesQuery(String),
-
-    #[error("Delete all accounts query error: \"{0}\"")]
-    DeleteAllAccountsQuery(String),
-
     #[error("Delete expired account changes query error: \"{0}\"")]
     DeleteExpiredAccountChangesQuery(String),
 
@@ -50,18 +44,6 @@ pub enum Error {
     #[error("Update account query error: \"{0}\"")]
     UpdateAccountQuery(String),
 
-    #[error("Delete account query error: \"{0}\"")]
-    DeleteAccountQuery(String),
-
-    #[error("Get account query error: \"{0}\"")]
-    GetAccountQuery(String),
-
-    #[error("Get account change query error: \"{0}\"")]
-    GetAccountChangeQuery(String),
-
-    #[error("Row not found error: \"{0}\"")]
-    RowNotFound(String),
-
     #[error("Create account duplicate key error: \"{0}\"")]
     CreateAccountDuplicateKey(String),
 
@@ -70,9 +52,6 @@ pub enum Error {
 
     #[error("Create account change query error: \"{0}\"")]
     CreateAccountChangeQuery(String),
-
-    #[error("Delete account info change query error: \"{0}\"")]
-    DeleteAccountInfoChangeQuery(String),
 
     #[error("Create id retry limit exceeded error")]
     CreateIdRetryLimitExceeded(),
@@ -106,7 +85,4 @@ pub enum Error {
 
     #[error("Delete expired unverified accounts query error: \"{0}\"")]
     DeleteExpiredUnverifiedAccountsQuery(String),
-
-    #[error("Delete expired account info changes error: \"{0}\"")]
-    DeleteExpiredAccountInfoChanges(String),
 }

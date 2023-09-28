@@ -4,7 +4,7 @@ mod prelude;
 mod routes;
 mod utils;
 
-use accounts::delete::{delete_expired_account_info_changes, delete_expired_unverified_accounts};
+use accounts::delete::{delete_expired_account_changes, delete_expired_unverified_accounts};
 use axum::{
     extract::DefaultBodyLimit,
     routing::{delete, get, patch, post},
@@ -27,8 +27,6 @@ pub struct AppState {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    todo!("Fazer o login e emails mais especificos...");
-
     let app_config = AppConfig::load_from_env().unwrap();
     let database_url = &app_config.database_url;
     let account_confirmation_lifespan = app_config.account_confirmation_lifespan;
@@ -93,6 +91,18 @@ async fn main() -> Result<()> {
             get(routes::accounts::get::get_account_request),
         )
         .route(
+            "/accounts/get/account/authenticate",
+            get(routes::accounts::get::authenticate_account_request),
+        )
+        .route(
+            "/accounts/get/account/authenticate/email",
+            post(routes::accounts::get::authenticate_account_without_credentials_request),
+        )
+        .route(
+            "/accounts/get/account/authenticate/email/confirm",
+            post(routes::accounts::get::confirm_authenticate_account_without_credentials_request),
+        )
+        .route(
             "/accounts/delete/account",
             delete(routes::accounts::delete::delete_account_request),
         )
@@ -115,7 +125,6 @@ async fn main() -> Result<()> {
     tokio::spawn(async move {
         let timeout: Duration = Duration::from_secs(check_timeout);
         loop {
-            println!("Ran Check");
             sleep(timeout).await;
 
             check_loop(account_confirmation_lifespan, &database_pool)
@@ -133,8 +142,22 @@ async fn main() -> Result<()> {
 }
 
 async fn check_loop(account_confirmation_lifespan: i64, database_pool: &PgPool) -> Result<()> {
-    delete_expired_unverified_accounts(account_confirmation_lifespan, database_pool).await?;
-    delete_expired_account_info_changes(account_confirmation_lifespan, database_pool).await?;
+    let deleted_expired_unverified_accounts_emails =
+        delete_expired_unverified_accounts(account_confirmation_lifespan, database_pool).await?;
+    let deleted_expired_account_changes_account_ids =
+        delete_expired_account_changes(account_confirmation_lifespan, database_pool).await?;
+
+    if !deleted_expired_unverified_accounts_emails.is_empty() {
+        println!(
+            "Deleted Expired Unverified Accounts Emails: {deleted_expired_unverified_accounts_emails:?}"
+        );
+    }
+
+    if !deleted_expired_account_changes_account_ids.is_empty() {
+        println!(
+            "Deleted Expired Account Changes Account IDs: {deleted_expired_account_changes_account_ids:?}"
+        );
+    }
 
     Ok(())
 }

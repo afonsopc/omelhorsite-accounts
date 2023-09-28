@@ -1,5 +1,6 @@
 use super::models::{
-    Account, AccountChange, AccountChangesTable, AccountTokenClaims, AccountWithId, AccountsTable,
+    Account, AccountChange, AccountChangesTable, AccountId, AccountTokenClaims,
+    AccountWithExtraInfo, AccountsTable,
 };
 use crate::{
     prelude::*,
@@ -68,7 +69,10 @@ pub async fn get_account_token(account_id: &String, database_pool: &PgPool) -> R
     Ok(token)
 }
 
-pub async fn get_account_from_token(token: &str, database_pool: &PgPool) -> Result<AccountWithId> {
+pub async fn get_account_from_token(
+    token: &str,
+    database_pool: &PgPool,
+) -> Result<AccountWithExtraInfo> {
     let account_token_claims = decode_jwt::<AccountTokenClaims>(token)?;
 
     let account_id = &account_token_claims.account_id;
@@ -101,9 +105,10 @@ pub async fn get_account_from_token(token: &str, database_pool: &PgPool) -> Resu
         password: account_row.password,
     };
 
-    let account_with_id = AccountWithId {
+    let account_with_id = AccountWithExtraInfo {
         account_id: account_row.account_id,
         account,
+        creation_timestamp: account_row.creation_timestamp,
     };
 
     Ok(account_with_id)
@@ -113,7 +118,7 @@ pub async fn get_account_from_credentials(
     email: &String,
     password: &String,
     database_pool: &PgPool,
-) -> Result<AccountWithId> {
+) -> Result<AccountWithExtraInfo> {
     let sql = r#"
         SELECT * FROM accounts 
         WHERE email = $1 
@@ -137,14 +142,33 @@ pub async fn get_account_from_credentials(
         password: account_row.password,
     };
 
-    let account_with_id = AccountWithId {
+    let account_with_id = AccountWithExtraInfo {
         account_id: account_row.account_id,
         account,
+        creation_timestamp: account_row.creation_timestamp,
     };
 
     Ok(account_with_id)
 }
 
+pub async fn get_account_id_from_email(email: &String, database_pool: &PgPool) -> Result<String> {
+    let sql = r#"
+        SELECT account_id FROM accounts 
+        WHERE email = $1 
+    "#;
+
+    let account_row = match query_as::<Postgres, AccountId>(sql)
+        .bind(email)
+        .fetch_one(database_pool)
+        .await
+    {
+        Ok(value) => value,
+        Err(sqlx::Error::RowNotFound) => return Err(Error::AccountNotFound(sql.to_string())),
+        Err(err) => return Err(Error::GetAccountFromEmail(err.to_string())),
+    };
+
+    Ok(account_row.account_id)
+}
 pub async fn get_account_change(
     account_id: &String,
     account_change_id: &String,

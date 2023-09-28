@@ -24,6 +24,16 @@ pub struct AccountChangesTable {
     pub creation_timestamp: String,
 }
 
+#[derive(FromRow, Debug)]
+pub struct AccountId {
+    pub account_id: String,
+}
+
+#[derive(FromRow, Debug)]
+pub struct AccountEmail {
+    pub email: String,
+}
+
 #[derive(Debug)]
 pub struct AccountChange {
     pub username: Option<String>,
@@ -41,9 +51,10 @@ pub struct Account {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AccountWithId {
+pub struct AccountWithExtraInfo {
     pub account_id: String,
     pub account: Account,
+    pub creation_timestamp: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

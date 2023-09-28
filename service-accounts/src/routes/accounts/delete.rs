@@ -17,7 +17,7 @@ use crate::{
     AppState,
 };
 
-use super::models::ConfirmDeleteAccountRequest;
+use super::models::ConfirmationCode;
 
 pub async fn delete_account_request(
     TypedHeader(authorization): TypedHeader<Authorization<Bearer>>,
@@ -27,8 +27,8 @@ pub async fn delete_account_request(
     println!("{process_id} - Starting \"account deletion\" request");
 
     let app_config = AppConfig::load_from_env().unwrap();
-    let email_subject = app_config.account_info_change_confirmation_email_subject;
-    let email_title = app_config.account_info_change_confirmation_email_title_message;
+    let email_subject = app_config.account_deletion_confirmation_email_subject;
+    let email_title = app_config.account_deletion_confirmation_email_title_message;
 
     let database_pool = &app_state.database_pool;
 
@@ -49,7 +49,7 @@ pub async fn delete_account_request(
         username: None,
         email: None,
         password: None,
-        verified: Some(false),
+        verified: None,
         step: None,
     };
 
@@ -91,7 +91,7 @@ pub async fn delete_account_request(
 pub async fn confirm_delete_account_request(
     TypedHeader(authorization): TypedHeader<Authorization<Bearer>>,
     State(app_state): State<AppState>,
-    Json(body): Json<ConfirmDeleteAccountRequest>,
+    Json(body): Json<ConfirmationCode>,
 ) -> impl IntoResponse {
     let process_id = get_process_id();
     println!("{process_id} - Starting \"account deletion confirmation\" request");
