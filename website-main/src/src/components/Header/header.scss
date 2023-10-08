@@ -2,8 +2,13 @@
     .brand-name {
         font-weight: 900;
         font-size: 25px;
+        text-overflow: ellipsis;
+        display: block;
+        overflow: hidden;
     }
+
     display: flex;
     gap: 10px;
     align-items: center;
+    overflow: hidden;
 }

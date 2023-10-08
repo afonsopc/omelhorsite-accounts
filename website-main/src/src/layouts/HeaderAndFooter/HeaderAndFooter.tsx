@@ -3,18 +3,14 @@ import Header from "../../components/Header/Header";
 import { Outlet } from 'react-router-dom';
 import "./headerAndFooter.scss"
 
-export interface HeaderAndFooterProps {
-  validAccount: boolean;
-}
-
-const HeaderAndFooter = ({ validAccount }: HeaderAndFooterProps) => {
+const HeaderAndFooter = () => {
   return (
     <div className="layout-container">
-        <Header validAccount={validAccount}/>
-        <div className="content">
-          <Outlet/>
-        </div>
-        <Footer/>
+      <Header />
+      <div className="content">
+        <Outlet />
+      </div>
+      <Footer />
     </div>
   )
 }

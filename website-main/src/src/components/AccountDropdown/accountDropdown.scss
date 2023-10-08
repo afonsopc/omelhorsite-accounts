@@ -1,0 +1,17 @@
+@media screen and (max-width: 275px) {
+    .account-dropdown-text {
+        max-width: 30vw !important;
+    }
+}
+
+.account-dropdown {
+    display: flex;
+    align-items: center;
+
+    .account-dropdown-text {
+        display: block;
+        max-width: 275px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+    }
+}

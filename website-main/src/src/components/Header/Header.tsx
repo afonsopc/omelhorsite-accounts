@@ -3,15 +3,11 @@ import { Navbar, Container, Image } from "react-bootstrap";
 import { language } from "../../main";
 import AccountDropdown from "../AccountDropdown/AccountDropdown";
 
-export interface HeaderProps {
-  validAccount: boolean;
-}
-
-function Header({ validAccount }: HeaderProps) {
+function Header() {
   return (
     <Navbar bg="light" variant="light" expand="lg" className="border-bottom">
       <Container>
-        <Navbar.Brand href="/" className="brand-container">
+        <Navbar.Brand href="/" className="brand-container gap-4">
           <Image
             src="/logo.svg"
             alt={language.dictionary.logotype}
@@ -19,7 +15,7 @@ function Header({ validAccount }: HeaderProps) {
           />
           <span className="brand-name">{language.dictionary.websiteName}</span>
         </Navbar.Brand>
-        <AccountDropdown validAccount={validAccount} />
+        <AccountDropdown />
       </Container>
     </Navbar>
   );

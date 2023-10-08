@@ -5,12 +5,12 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import Home from "./pages/Home/Home";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import HeaderAndFooter from "./layouts/HeaderAndFooter/HeaderAndFooter";
-import { languages } from "./translations";
+import { getLanguage } from "./translations";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <HeaderAndFooter validAccount={localStorage.getItem("token") ? true : false} />,
+    element: <HeaderAndFooter />,
     children: [
       {
         path: "",
@@ -20,45 +20,15 @@ const router = createBrowserRouter([
   }
 ]);
 
-const apiUrl = "http://0.0.0.0:3000";
-
-export const logout = () => {
-  localStorage.removeItem("token");
-  window.location.reload();
-};
-
-function getLanguage() {
-  const language = localStorage.getItem("language");
-
-  if (language === "portuguese") { return languages.portuguese }
-  // if (language === "spanish") { return languages.spanish }
-  // if (language === "french") { return languages.french }
-  // if (language === "german") { return languages.german }
-  // else { return languages.english };
-  else { return languages.portuguese };
-
+export const sleep = (seconds: number) => {
+  let secondsToMiliseconds = seconds * 1000;
+  return new Promise(resolve => setTimeout(resolve, secondsToMiliseconds));
 }
+
 export const language = getLanguage();
-
-function detectAndSetLanguage() {
-  const language = localStorage.getItem("language");
-
-  if (language) { return };
-
-  const browserLanguage = navigator.language;
-
-  if (browserLanguage.startsWith("pt")) {
-    localStorage.setItem("language", "portuguese");
-  } else {
-    localStorage.removeItem("language");
-  }
-}
-
-
 
 const Main = () => {
   useEffect(() => {
-    detectAndSetLanguage();
     document.title = language.dictionary.websiteName;
   }, []);
   console.log(language);
@@ -78,16 +48,16 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 
 import axios, { AxiosError, AxiosResponse } from 'axios';
 
-export interface Response<T> {
+export interface ApiResponse<T> {
   statusCode: number;
   data?: T;
 }
 
-export async function sendRequest<T>(
+export async function sendApiRequest<T>(
   method: "get" | "post" | "put" | "delete" | "patch",
   url: string,
   data?: any
-): Promise<Response<T>> {
+): Promise<ApiResponse<T>> {
   try {
     const headers = {
       "Content-Type": "application/json",

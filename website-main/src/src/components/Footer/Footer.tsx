@@ -1,21 +1,29 @@
 import { Container } from "react-bootstrap";
 import "./footer.scss";
 import { language } from "../../main";
+import LanguageSelector from "../LanguageSelector/LanguageSelector";
+import { Language } from "../../translations";
 
 const Footer = () => {
+  const handleChangeLanguage = (language: Language) => {
+    localStorage.setItem("language", language.code);
+    window.location.reload();
+  }
+
   return (
-    <footer style={{ backgroundColor: "#f8f9fa", padding: "20px" }} className="border-top">
-      <Container>
-        <div className="d-flex justify-content-center align-items-center footer-content">
-          <img
-            src="/logo.svg"
-            alt="Logo"
-            style={{ width: "50px", height: "50px", marginRight: "10px" }}
-          />
-          <span>{language.dictionary.websiteName} &copy; {language.dictionary.copyright}</span>
-        </div>
+    <footer className="border-top footer">
+      <Container className="footer-container">
+        <img
+          src="/logo.svg"
+          style={{ width: "50px", height: "50px" }}
+        />
+        <span>{language.dictionary.websiteName} &copy; {language.dictionary.copyright}</span>
+        <LanguageSelector
+          selectedLanguage={language}
+          onChange={(language) => handleChangeLanguage(language)}
+        />
       </Container>
-    </footer>
+    </footer >
   )
 }
 
