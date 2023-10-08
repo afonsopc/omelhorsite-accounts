@@ -1,4 +1,4 @@
-import { sendRequest } from '../main';
+import { ApiResponse, sendApiRequest } from '../main';
 
 const API_URL = "http://localhost:3002"
 
@@ -16,13 +16,23 @@ interface TokenResponse {
     token?: string,
 }
 
+export interface AccountInfo {
+    username: string,
+    email: string,
+}
 
-export async function cancelConfirmations(): Promise<number> {
+interface AccountInfoResponse {
+    username: string,
+    email: string,
+}
+
+
+export async function cancelConfirmations(): Promise<ApiResponse<EmptyResponse>> {
     const url = `${API_URL}/confirmations/cancel`
 
-    const response = await sendRequest<EmptyResponse>("post", url);
+    const response = await sendApiRequest<EmptyResponse>("post", url);
 
-    return response.statusCode
+    return response
 }
 
 export interface SignUpCredentials {
@@ -37,7 +47,7 @@ interface SignUpRequest {
     password: string
 }
 
-export async function signUp(signUp: SignUpCredentials): Promise<number> {
+export async function signUp(signUp: SignUpCredentials): Promise<ApiResponse<TokenResponse>> {
     const url = `${API_URL}/signup`
 
     let signUpRequest: SignUpRequest = {
@@ -46,31 +56,29 @@ export async function signUp(signUp: SignUpCredentials): Promise<number> {
         password: signUp.password
     };
 
-    const response = await sendRequest<TokenResponse>("post", url, signUpRequest);
+    const response = await sendApiRequest<TokenResponse>("post", url, signUpRequest);
 
     if (response.statusCode == 200 && response.data && response.data.token) {
         localStorage.setItem("token", response.data.token);
-        return response.statusCode
     }
 
-    return response.statusCode
+    return response;
 }
 
-export async function signUpConfirm(confirmationCode: ConfirmationCode): Promise<number> {
+export async function signUpConfirm(confirmationCode: ConfirmationCode): Promise<ApiResponse<TokenResponse>> {
     const url = `${API_URL}/signup/confirm`
 
     let confirmationCodeRequest: ConfirmationCodeRequest = {
         confirmation_code: confirmationCode.confirmationCode
     };
 
-    const response = await sendRequest<TokenResponse>("post", url, confirmationCodeRequest);
+    const response = await sendApiRequest<TokenResponse>("post", url, confirmationCodeRequest);
 
     if (response.statusCode == 200 && response.data && response.data.token) {
         localStorage.setItem("token", response.data.token);
-        return response.statusCode
     }
 
-    return response.statusCode;
+    return response;
 }
 
 export interface SignInCredentials {
@@ -83,7 +91,7 @@ interface SignInRequest {
     password: string
 }
 
-export async function signIn(signIn: SignInCredentials): Promise<number> {
+export async function signIn(signIn: SignInCredentials): Promise<ApiResponse<TokenResponse>> {
     const url = `${API_URL}/authenticate`
 
     let signInRequest: SignInRequest = {
@@ -91,40 +99,156 @@ export async function signIn(signIn: SignInCredentials): Promise<number> {
         password: signIn.password
     };
 
-    const response = await sendRequest<TokenResponse>("post", url, signInRequest);
+    const response = await sendApiRequest<TokenResponse>("post", url, signInRequest);
 
     if (response.statusCode == 200 && response.data && response.data.token) {
         localStorage.setItem("token", response.data.token);
-        return response.statusCode
     }
 
-    return response.statusCode
+    return response
 }
 
 export function logout() { localStorage.removeItem("token") };
 
 
-export async function deleteAccount(): Promise<number> {
+export async function deleteAccount(): Promise<ApiResponse<EmptyResponse>> {
     const url = `${API_URL}/change/delete`
 
-    const response = await sendRequest<EmptyResponse>("post", url);
+    const response = await sendApiRequest<EmptyResponse>("post", url);
 
-    return response.statusCode
+    return response
 }
 
-export async function deleteAccountConfirm(confirmationCode: ConfirmationCode): Promise<number> {
+export async function deleteAccountConfirm(confirmationCode: ConfirmationCode): Promise<ApiResponse<EmptyResponse>> {
     const url = `${API_URL}/change/delete/confirm`
 
     let confirmationCodeRequest: ConfirmationCodeRequest = {
         confirmation_code: confirmationCode.confirmationCode
     };
 
-    const response = await sendRequest<EmptyResponse>("post", url, confirmationCodeRequest);
+    const response = await sendApiRequest<EmptyResponse>("post", url, confirmationCodeRequest);
 
     if (response.statusCode == 200) {
         localStorage.removeItem("token");
-        return response.statusCode
     }
 
-    return response.statusCode;
+    return response;
+}
+
+export async function getAccountInfo(): Promise<ApiResponse<AccountInfoResponse>> {
+    const url = `${API_URL}/account`
+
+    const response = await sendApiRequest<AccountInfoResponse>("get", url);
+
+    return response;
+}
+
+
+
+interface ChangeUsernameRequest {
+    username: string,
+}
+
+export async function changeUsername(username: string): Promise<ApiResponse<EmptyResponse>> {
+    const url = `${API_URL}/change/username`
+
+    let changeUsernameRequest: ChangeUsernameRequest = {
+        username: username,
+    };
+
+    const response = await sendApiRequest<EmptyResponse>("post", url, changeUsernameRequest);
+
+    return response;
+}
+
+export async function changeUsernameConfirm(confirmationCode: ConfirmationCode): Promise<ApiResponse<TokenResponse>> {
+    const url = `${API_URL}/change/username/confirm`
+
+    let confirmationCodeRequest: ConfirmationCodeRequest = {
+        confirmation_code: confirmationCode.confirmationCode
+    };
+
+    const response = await sendApiRequest<TokenResponse>("post", url, confirmationCodeRequest);
+
+    if (response.statusCode == 200 && response.data && response.data.token) {
+        localStorage.setItem("token", response.data.token);
+    }
+
+    return response;
+}
+
+interface ChangePasswordRequest {
+    password: string,
+}
+
+export async function changePassword(password: string): Promise<ApiResponse<EmptyResponse>> {
+    const url = `${API_URL}/change/password`
+
+    let changePasswordRequest: ChangePasswordRequest = {
+        password: password,
+    };
+
+    const response = await sendApiRequest<EmptyResponse>("post", url, changePasswordRequest);
+
+    return response;
+}
+
+export async function changePasswordConfirm(confirmationCode: ConfirmationCode): Promise<ApiResponse<TokenResponse>> {
+    const url = `${API_URL}/change/password/confirm`
+
+    let confirmationCodeRequest: ConfirmationCodeRequest = {
+        confirmation_code: confirmationCode.confirmationCode
+    };
+
+    const response = await sendApiRequest<TokenResponse>("post", url, confirmationCodeRequest);
+
+    if (response.statusCode == 200 && response.data && response.data.token) {
+        localStorage.setItem("token", response.data.token);
+    }
+
+    return response;
+}
+
+interface ChangeEmailRequest {
+    email: string,
+}
+
+export async function changeEmail(email: string): Promise<ApiResponse<EmptyResponse>> {
+    const url = `${API_URL}/change/email`
+
+    let changeEmailRequest: ChangeEmailRequest = {
+        email: email,
+    };
+
+    const response = await sendApiRequest<EmptyResponse>("post", url, changeEmailRequest);
+
+    return response;
+}
+
+export async function changeEmailStepOneConfirm(confirmationCode: ConfirmationCode): Promise<ApiResponse<EmptyResponse>> {
+    const url = `${API_URL}/change/email/one/confirm`
+
+    let confirmationCodeRequest: ConfirmationCodeRequest = {
+        confirmation_code: confirmationCode.confirmationCode
+    };
+
+    const response = await sendApiRequest<EmptyResponse>("post", url, confirmationCodeRequest);
+
+    return response;
+}
+
+export async function changeEmailStepTwoConfirm(confirmationCode: ConfirmationCode): Promise<ApiResponse<TokenResponse>> {
+    const url = `${API_URL}/change/email/two/confirm`
+
+    let confirmationCodeRequest: ConfirmationCodeRequest = {
+        confirmation_code: confirmationCode.confirmationCode
+    };
+
+    const response = await sendApiRequest<TokenResponse>("post", url, confirmationCodeRequest);
+
+    if (response.statusCode == 200 && response.data && response.data.token) {
+        localStorage.setItem("token", response.data.token);
+    }
+
+    return response;
 }

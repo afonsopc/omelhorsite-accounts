@@ -1,44 +1,34 @@
 import { useState } from "react";
-import { Alert, Button, Form, InputGroup, Spinner } from "react-bootstrap"
+import { Button, Form, Spinner } from "react-bootstrap"
 import { language } from "../../../main";
+import PasswordInput from "../../PasswordInput/PasswordInput";
 
-const PasswordChangeForm = () => {
-    const [newPassword, setNewPassword] = useState<string>("");
-    const [showNewPassword, setShowNewPassword] = useState(false);
-    const [showNewPasswordErrorMessage, setShowNewPasswordErrorMessage] = useState<boolean>(false);
-    const [showNewPasswordSuccessMessage, setShowNewPasswordSuccessMessage] = useState<boolean>(false);
-    const [loadingNewPassword, setLoadingNewPassword] = useState<boolean>(false);
-    const [newPasswordErrorMessage, setNewPasswordErrorMessage] = useState<string>("");
+interface PasswordChangeProps {
+  loading: boolean;
+  onSubmit: (password: string) => void;
+}
+
+const PasswordChangeForm = ({ loading, onSubmit }: PasswordChangeProps) => {
+  const [password, setPassword] = useState<string>("");
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    onSubmit(password);
+  }
 
   return (
-    <Form className="form-container">
+    <Form onSubmit={(e) => handleSubmit(e)} className="form-container">
       <Form.Group controlId="newPassword" className="form-container">
         <Form.Label>{language.dictionary.newPassword}</Form.Label>
-        <InputGroup>
-          <Form.Control
-            type={showNewPassword ? "text" : "password"}
-            placeholder={language.dictionary.enterNewPassword}
-            required
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            autoComplete="new-password"
-          />
-          <Button
-            variant="outline-secondary"
-            onClick={() => setShowNewPassword(!showNewPassword)}
-          >
-            {showNewPassword ? `${language.dictionary.hide}` : `${language.dictionary.show}`}
-          </Button>
-        </InputGroup>
+        <PasswordInput value={password} onChange={(e) => setPassword(e.currentTarget.value)} />
       </Form.Group>
-      <Alert className="alert-danger" hidden={!showNewPasswordErrorMessage}>{newPasswordErrorMessage}</Alert>
-      <Alert className="alert-success" hidden={!showNewPasswordSuccessMessage}>{language.dictionary.confirmationEmailSent}</Alert>
-      <Button variant="primary" type="submit" disabled={!newPassword || loadingNewPassword}>
-            {loadingNewPassword ?
-                <Spinner animation="border" role="status" style={{ width: "1em", height: "1em" }}/>
-              :
-                language.dictionary.change
-            }
+      <Button type="submit" variant="primary" disabled={!password || loading}>
+        {loading ?
+          <Spinner animation="border" role="status" style={{ width: "1em", height: "1em" }} />
+          :
+          language.dictionary.change
+        }
       </Button>
     </Form>
   )

@@ -23,6 +23,7 @@ const AuthenticationModal: React.FC<AuthenticationModalProps> = ({ show, onHide,
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
+  const [confirmationCodeModalLoading, setConfirmationCodeModalLoading] = useState(false);
   const [showConfirmationCodeModal, setShowConfirmationCodeModal] = useState(false);
   const [showConfirmationCodeModalErrorMessage, setShowConfirmationCodeModalErrorMessage] = useState(false);
 
@@ -43,12 +44,12 @@ const AuthenticationModal: React.FC<AuthenticationModalProps> = ({ show, onHide,
         password: password
       };
 
-      let statusCode: number = await signIn(signInCredentials);
-      if (statusCode == 200) {
+      let response = await signIn(signInCredentials);
+      if (response.statusCode == 200) {
         window.location.reload();
       }
       else {
-        setErrorMessage(`Error code: ${statusCode}`);
+        setErrorMessage(`Error code: ${response.statusCode}`);
         setShowErrorMessage(true);
       }
     }
@@ -59,12 +60,12 @@ const AuthenticationModal: React.FC<AuthenticationModalProps> = ({ show, onHide,
         password: password,
       };
 
-      let statusCode: number = await signUp(signUpCredentials);
-      if (statusCode == 200) {
+      let response = await signUp(signUpCredentials);
+      if (response.statusCode == 200) {
         setShowConfirmationCodeModal(true);
       }
       else {
-        setErrorMessage(`Error code: ${statusCode}`);
+        setErrorMessage(`Error code: ${response.statusCode}`);
         setShowErrorMessage(true);
       }
     }
@@ -74,18 +75,20 @@ const AuthenticationModal: React.FC<AuthenticationModalProps> = ({ show, onHide,
 
   const onConfirmationCodeConfirm = async (code: string) => {
     setShowConfirmationCodeModalErrorMessage(false);
+    setConfirmationCodeModalLoading(true);
 
     let confirmationCode: ConfirmationCode = {
       confirmationCode: code
     };
 
-    let statusCode: number = await signUpConfirm(confirmationCode);
-    if (statusCode === 200) {
+    let response = await signUpConfirm(confirmationCode);
+    if (response.statusCode === 200) {
       setShowConfirmationCodeModal(false);
       window.location.reload();
       return;
     }
     setShowConfirmationCodeModalErrorMessage(true);
+    setConfirmationCodeModalLoading(false);
   }
 
   return (
@@ -150,6 +153,8 @@ const AuthenticationModal: React.FC<AuthenticationModalProps> = ({ show, onHide,
         showErrorMessage={showConfirmationCodeModalErrorMessage}
         onHide={() => setShowConfirmationCodeModal(false)}
         onConfirm={(value) => onConfirmationCodeConfirm(value)}
+        message={language.dictionary.confirmationEmailSent}
+        loading={confirmationCodeModalLoading}
       />
     </div>
   );

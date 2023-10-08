@@ -9,7 +9,7 @@ use accounts::delete::{
     delete_unverified_accounts_not_awaiting_confirmation,
 };
 use axum::{
-    routing::{delete, get, patch, post},
+    routing::{get, post},
     Router,
 };
 use prelude::*;
@@ -109,7 +109,7 @@ async fn run_server(server_url: &str, app_state: AppState) {
     let change_router = Router::new()
         .route(
             "/username",
-            patch(routes::change::username::change_username_request),
+            post(routes::change::username::change_username_request),
         )
         .route(
             "/username/confirm",
@@ -117,13 +117,13 @@ async fn run_server(server_url: &str, app_state: AppState) {
         )
         .route(
             "/password",
-            patch(routes::change::password::change_password_request),
+            post(routes::change::password::change_password_request),
         )
         .route(
             "/password/confirm",
             post(routes::change::password::confirm_change_password_request),
         )
-        .route("/email", patch(routes::change::email::change_email_request))
+        .route("/email", post(routes::change::email::change_email_request))
         .route(
             "/email/one/confirm",
             post(routes::change::email::confirm_change_email_step_one_request),

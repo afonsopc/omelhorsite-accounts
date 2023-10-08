@@ -1,6 +1,14 @@
 .footer-logo {
     width: 80px;
 }
-.footer-content {
-    height: 90px;
+
+.footer {
+    background-color: #f8f9fa;
+    padding: 20px;
+}
+
+.footer-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
 }

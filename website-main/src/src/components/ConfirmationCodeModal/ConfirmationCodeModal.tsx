@@ -1,6 +1,6 @@
 import "./confirmationCodeModal.scss";
-import React, { useState } from "react";
-import { Modal, Button, Form, Alert } from "react-bootstrap";
+import React, { useEffect, useState } from "react";
+import { Modal, Button, Form, Alert, Spinner } from "react-bootstrap";
 import { language } from "../../main";
 import { cancelConfirmations } from "../../services/accountService";
 
@@ -9,6 +9,8 @@ interface ConfirmationCodeModalProps {
     showErrorMessage: boolean,
     onHide: () => void;
     onConfirm: (value: string) => void;
+    message: string,
+    loading: boolean;
 }
 
 const ConfirmationCodeModal: React.FC<ConfirmationCodeModalProps> = ({
@@ -16,6 +18,9 @@ const ConfirmationCodeModal: React.FC<ConfirmationCodeModalProps> = ({
     showErrorMessage,
     onHide,
     onConfirm,
+    message,
+    loading,
+
 }) => {
     const [code, setCode] = useState("");
 
@@ -23,6 +28,10 @@ const ConfirmationCodeModal: React.FC<ConfirmationCodeModalProps> = ({
         cancelConfirmations();
         onHide();
     };
+
+    useEffect(() => {
+        setCode("");
+    }, [message])
 
     return (
         <Modal
@@ -34,8 +43,11 @@ const ConfirmationCodeModal: React.FC<ConfirmationCodeModalProps> = ({
                 <Modal.Title>{language.dictionary.confirmationCodeModalTitle}</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-                <p>{language.dictionary.confirmationEmailSent}</p>
-                <p>{language.dictionary.toConfirmInsertConfirmationCodeBellow}</p>
+                <div className="text">
+                    <h5>{message}</h5>
+                    <br />
+                    <p><small>{language.dictionary.toConfirmInsertConfirmationCodeBellow}</small></p>
+                </div>
                 <Form>
                     <Form.Group controlId="confirmationInput">
                         <Form.Control
@@ -46,14 +58,19 @@ const ConfirmationCodeModal: React.FC<ConfirmationCodeModalProps> = ({
                         />
                     </Form.Group>
                 </Form>
+                <br />
+                <Alert className="alert-danger" hidden={!showErrorMessage}>{language.dictionary.invalidConfirmationCode}</Alert>
             </Modal.Body>
-            <Alert className="alert-danger" hidden={!showErrorMessage}>{language.dictionary.invalidConfirmationCode}</Alert>
             <Modal.Footer>
                 <Button variant="secondary" onClick={() => handleCancel()}>
                     {language.dictionary.cancel}
                 </Button>
-                <Button variant="primary" onClick={() => onConfirm(code)}>
-                    {language.dictionary.confirm}
+                <Button variant="primary" onClick={() => onConfirm(code)} disabled={loading}>
+                    {loading ?
+                        <Spinner animation="border" role="status" style={{ width: "1em", height: "1em" }} />
+                        :
+                        language.dictionary.confirm
+                    }
                 </Button>
             </Modal.Footer>
         </Modal>
