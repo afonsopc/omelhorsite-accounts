@@ -33,7 +33,6 @@ pub struct AppConfig {
     pub confirmation_email_title_message_placeholder: String,
     pub confirmation_email_confirmation_code_placeholder: String,
     pub confirmation_email_body: String,
-    pub max_body_size: usize,
     pub server_url: String,
     pub process_id_length: usize,
     pub name: String,
@@ -53,7 +52,6 @@ impl AppConfig {
             string_encryption_processing_cost: environment_variable(
                 "STRING_ENCRYPTION_PROCESSING_COST",
             )?,
-            max_body_size: environment_variable("MAX_BODY_SIZE")?,
             process_id_length: environment_variable("PROCESS_ID_LENGTH")?,
             name: environment_variable("NAME")?,
             email_address: environment_variable("EMAIL_ADDRESS")?,

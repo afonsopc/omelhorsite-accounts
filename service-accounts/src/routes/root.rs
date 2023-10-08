@@ -1,6 +1,6 @@
 use rand::{thread_rng, Rng};
 
-use crate::get_process_id;
+use crate::utils::random::get_random_process_id;
 
 pub async fn root() -> &'static str {
     let poems = vec![
@@ -324,7 +324,7 @@ pub async fn root() -> &'static str {
     "Xana (xa na xa na), Xana (xa na na), Xa na (na na), consegue (gue gue gue), me, ouvir (ir ir ir)? aaya aaya"
     ];
 
-    let process_id = get_process_id();
+    let process_id = get_random_process_id();
     println!("{process_id} - Starting \"root\" request");
 
     let mut rng = thread_rng();

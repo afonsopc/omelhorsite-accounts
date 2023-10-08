@@ -1,17 +1,44 @@
 version: "3"
 
+networks:
+  service-accounts-network:
+    driver: bridge
+
 services:
   service-accounts-database:
     container_name: service-accounts-database
     image: postgres:latest
-    # expose:
-    #   - 3000
     volumes:
       - ./service-accounts-database/database:/database:rw
-    ports:
-      - 3001:3001
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
       - PGDATA=/database
     command: postgres -c log_statement=all -p 3001
+    networks:
+      - service-accounts-network
+
+  service-accounts:
+    container_name: service-accounts
+    depends_on:
+      - service-accounts-database
+    ports:
+      - 3002:3002
+    env_file:
+      - ./service-accounts/config.env
+    environment:
+      - SERVER_URL=0.0.0.0:3002
+      - DATABASE_URL=postgres://user:password@service-accounts-database:3001/user
+    build:
+      context: ./service-accounts
+    networks:
+      - service-accounts-network
+
+  # website-main:
+  #   container_name: website-main
+  #   depends_on:
+  #     - service-accounts-database
+  #   ports:
+  #     - 3000:3000
+  #   build: 
+  #     context: ./website-main

@@ -85,4 +85,7 @@ pub enum Error {
 
     #[error("Delete expired unverified accounts query error: \"{0}\"")]
     DeleteExpiredUnverifiedAccountsQuery(String),
+
+    #[error("Delete expired unverified accounts not awaiting confirmation query error: \"{0}\"")]
+    DeleteExpiredUnverifiedAccountsNotAwaitingConfirmationQuery(String),
 }

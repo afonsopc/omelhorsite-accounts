@@ -169,6 +169,7 @@ pub async fn get_account_id_from_email(email: &String, database_pool: &PgPool) -
 
     Ok(account_row.account_id)
 }
+
 pub async fn get_account_change(
     account_id: &String,
     account_change_id: &String,

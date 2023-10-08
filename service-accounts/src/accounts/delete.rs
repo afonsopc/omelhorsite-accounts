@@ -23,6 +23,21 @@ pub async fn delete_account_change(
     }
 }
 
+pub async fn delete_account_change_from_account_id(
+    account_id: &String,
+    database_pool: &PgPool,
+) -> Result<()> {
+    let sql = r#"
+        DELETE FROM account_changes WHERE account_id = $1
+    "#;
+
+    match query(sql).bind(account_id).execute(database_pool).await {
+        Ok(_) => Ok(()),
+        Err(sqlx::Error::RowNotFound) => Err(Error::AccountChangeNotFound(sql.to_string())),
+        Err(err) => Err(Error::DeleteAccountChangeQuery(err.to_string())),
+    }
+}
+
 pub async fn delete_expired_unverified_accounts(
     expiration: i64,
     database_pool: &PgPool,
@@ -49,6 +64,37 @@ pub async fn delete_expired_unverified_accounts(
             Ok(removed_emails)
         }
         Err(err) => Err(Error::DeleteExpiredUnverifiedAccountsQuery(err.to_string())),
+    }
+}
+
+pub async fn delete_unverified_accounts_not_awaiting_confirmation(
+    database_pool: &PgPool,
+) -> Result<Vec<String>> {
+    let sql = r#"
+        DELETE FROM accounts
+        WHERE 
+            verified = false
+            AND NOT EXISTS (
+                SELECT 1 FROM account_changes WHERE account_id = accounts.account_id
+            )
+        RETURNING email
+    "#;
+
+    let mut removed_emails: Vec<String> = Vec::new();
+
+    match query_as::<Postgres, AccountEmail>(sql)
+        .fetch_all(database_pool)
+        .await
+    {
+        Ok(rows) => {
+            for row in rows {
+                removed_emails.push(row.email);
+            }
+            Ok(removed_emails)
+        }
+        Err(err) => {
+            Err(Error::DeleteExpiredUnverifiedAccountsNotAwaitingConfirmationQuery(err.to_string()))
+        }
     }
 }
 
