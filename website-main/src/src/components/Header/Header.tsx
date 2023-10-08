@@ -2,6 +2,8 @@ import "./header.scss";
 import { Navbar, Container, Image } from "react-bootstrap";
 import { language } from "../../main";
 import AccountDropdown from "../AccountDropdown/AccountDropdown";
+import LanguageSelector from "../LanguageSelector/LanguageSelector";
+import { useState } from "react";
 
 function Header() {
   return (
