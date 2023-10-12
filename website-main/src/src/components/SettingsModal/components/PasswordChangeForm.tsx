@@ -19,9 +19,9 @@ const PasswordChangeForm = ({ loading, onSubmit }: PasswordChangeProps) => {
 
   return (
     <Form onSubmit={(e) => handleSubmit(e)} className="form-container">
-      <Form.Group controlId="newPassword" className="form-container">
+      <Form.Group controlId="newPassword">
         <Form.Label>{language.dictionary.newPassword}</Form.Label>
-        <PasswordInput value={password} onChange={(e) => setPassword(e.currentTarget.value)} />
+        <PasswordInput required value={password} onChange={(e) => setPassword(e.currentTarget.value)} />
       </Form.Group>
       <Button type="submit" variant="primary" disabled={!password || loading}>
         {loading ?

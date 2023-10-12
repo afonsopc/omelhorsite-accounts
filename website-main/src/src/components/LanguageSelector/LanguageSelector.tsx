@@ -1,27 +1,17 @@
 import "./languageSelector.scss"
-import React from "react";
 import { Dropdown } from "react-bootstrap";
-import { Languages, Language, languages } from "../../translations";
+import { Language, languages } from "../../translations";
 import { language } from "../../main";
 
-interface LanguageSelectorProps {
-  selectedLanguage: Language;
-  onChange: (language: Language) => void;
-}
-
-const LanguageSelector: React.FC<LanguageSelectorProps> = ({
-  selectedLanguage,
-  onChange,
-}) => {
+const LanguageSelector = () => {
   const onLanguageClick = (language: Language) => {
-    onChange(language);
-    console.log(language);
-
+    localStorage.setItem("language", language.code);
+    window.location.reload();
   }
   return (
     <Dropdown>
       <Dropdown.Toggle variant="default" id="dropdownMenu1" className="language">
-        <img src={selectedLanguage.flagPath} className="flag" />{selectedLanguage.name}
+        <img src={language.flagPath} className="flag" />{language.name}
       </Dropdown.Toggle>
       {Object.values(languages).length !== 1 ?
         <Dropdown.Menu>

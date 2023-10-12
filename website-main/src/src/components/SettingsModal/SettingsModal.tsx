@@ -10,282 +10,284 @@ import { deleteAccount, deleteAccountConfirm, ConfirmationCode, cancelConfirmati
 import ConfirmationCodeModal from "../ConfirmationCodeModal/ConfirmationCodeModal";
 import CancelConfirmationsButton from "./components/CancelConfirmationsButton";
 import UsernameChangeForm from "./components/UsernameChangeForm";
+import ThemeSelector from "../ThemeSelector/ThemeSelector";
 
 interface SettingsModalProps {
-  show: boolean;
-  onHide: () => void;
+    show: boolean;
+    onHide: () => void;
 }
 
 enum Actions {
-  EmailStepOne = "emailStepOne",
-  EmailStepTwo = "emailStepTwo",
-  Username = "username",
-  Password = "password",
-  Delete = "delete",
-  None = "none",
+    EmailStepOne = "emailStepOne",
+    EmailStepTwo = "emailStepTwo",
+    Username = "username",
+    Password = "password",
+    Delete = "delete",
+    None = "none",
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ show, onHide }) => {
-  const [deleteAccountErrorMessage, setDeleteAccountErrorMessage] = useState("");
-  const [loadingDeleteAccount, setLoadingDeleteAccount] = useState(false);
+    const [deleteAccountErrorMessage, setDeleteAccountErrorMessage] = useState("");
+    const [loadingDeleteAccount, setLoadingDeleteAccount] = useState(false);
 
-  const [showConfirmationCodeModal, setShowConfirmationCodeModal] = useState(false);
-  const [confirmationCodeModalLoading, setConfirmationCodeModalLoading] = useState(false);
-  const [confirmationCodeModalMessage, setConfirmationCodeModalMessage] = useState("");
-  const [showConfirmationCodeModalErrorMessage, setShowConfirmationCodeModalErrorMessage] = useState(false);
-  const [currentAction, setCurrentAction] = useState<Actions>(Actions.None);
+    const [showConfirmationCodeModal, setShowConfirmationCodeModal] = useState(false);
+    const [confirmationCodeModalLoading, setConfirmationCodeModalLoading] = useState(false);
+    const [confirmationCodeModalMessage, setConfirmationCodeModalMessage] = useState("");
+    const [showConfirmationCodeModalErrorMessage, setShowConfirmationCodeModalErrorMessage] = useState(false);
+    const [currentAction, setCurrentAction] = useState<Actions>(Actions.None);
 
-  const [loadingCancelConfirmations, setLoadingCancelConfirmations] = useState(false);
-  const [showCancelConfirmationsSuccessMessage, setShowCancelConfirmationsSuccessMessage] = useState(false);
-  const [cancelConfirmationsErrorMessage, setCancelConfirmationsErrorMessage] = useState("");
+    const [loadingCancelConfirmations, setLoadingCancelConfirmations] = useState(false);
+    const [showCancelConfirmationsSuccessMessage, setShowCancelConfirmationsSuccessMessage] = useState(false);
+    const [cancelConfirmationsErrorMessage, setCancelConfirmationsErrorMessage] = useState("");
 
-  const [loadingChangeUsername, setLoadingChangeUsername] = useState(false);
-  const [changeUsernameErrorMessage, setChangeUsernameErrorMessage] = useState("");
+    const [loadingChangeUsername, setLoadingChangeUsername] = useState(false);
+    const [changeUsernameErrorMessage, setChangeUsernameErrorMessage] = useState("");
 
-  const [loadingChangePassword, setLoadingChangePassword] = useState(false);
-  const [changePasswordErrorMessage, setChangePasswordErrorMessage] = useState("");
+    const [loadingChangePassword, setLoadingChangePassword] = useState(false);
+    const [changePasswordErrorMessage, setChangePasswordErrorMessage] = useState("");
 
-  const [loadingChangeEmail, setLoadingChangeEmail] = useState(false);
-  const [changeEmailErrorMessage, setChangeEmailErrorMessage] = useState("");
+    const [loadingChangeEmail, setLoadingChangeEmail] = useState(false);
+    const [changeEmailErrorMessage, setChangeEmailErrorMessage] = useState("");
 
-  const [currentUsername, setCurrentUsername] = useState("");
-  const [currentEmail, setCurrentEmail] = useState("");
+    const [currentUsername, setCurrentUsername] = useState("");
+    const [currentEmail, setCurrentEmail] = useState("");
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const data = await getAccountInfo();
-      if (data.data && data.data.username) {
-        setCurrentUsername(data.data.username);
-        setCurrentEmail(data.data.email);
-      }
-    }
+    useEffect(() => {
+        const fetchData = async () => {
+            const data = await getAccountInfo();
+            if (data.data && data.data.username) {
+                setCurrentUsername(data.data.username);
+                setCurrentEmail(data.data.email);
+            }
+        }
 
-    fetchData();
-  }, [])
+        fetchData();
+    }, [])
 
-  const handleConfirmationCodeModalConfirm = async (code: string) => {
-    let confirmationCode: ConfirmationCode = {
-      confirmationCode: code
+    const handleConfirmationCodeModalConfirm = async (code: string) => {
+        let confirmationCode: ConfirmationCode = {
+            confirmationCode: code
+        };
+
+        setConfirmationCodeModalMessage("");
+        setShowConfirmationCodeModalErrorMessage(false);
+        setConfirmationCodeModalLoading(true);
+
+        if (currentAction === Actions.Delete) {
+            let response = await deleteAccountConfirm(confirmationCode);
+            if (response.statusCode === 200) {
+                window.location.reload();
+            }
+            else {
+                setShowConfirmationCodeModalErrorMessage(true);
+            }
+        }
+        else if (currentAction === Actions.Username) {
+            let response = await changeUsernameConfirm(confirmationCode);
+            if (response.statusCode === 200) {
+                window.location.reload();
+            }
+            else {
+                setShowConfirmationCodeModalErrorMessage(true);
+            }
+        }
+        else if (currentAction === Actions.Password) {
+            let response = await changePasswordConfirm(confirmationCode);
+            if (response.statusCode === 200) {
+                window.location.reload();
+            }
+            else {
+                setShowConfirmationCodeModalErrorMessage(true);
+            }
+        }
+        else if (currentAction === Actions.EmailStepOne) {
+            let response = await changeEmailStepOneConfirm(confirmationCode);
+            if (response.statusCode === 200) {
+                setConfirmationCodeModalMessage(language.dictionary.confirmationEmailSentToNew);
+                setCurrentAction(Actions.EmailStepTwo);
+                setConfirmationCodeModalLoading(false);
+            }
+            else {
+                setShowConfirmationCodeModalErrorMessage(true);
+            }
+        }
+        else if (currentAction === Actions.EmailStepTwo) {
+            let response = await changeEmailStepTwoConfirm(confirmationCode);
+            if (response.statusCode === 200) {
+                window.location.reload();
+            }
+            else {
+                setShowConfirmationCodeModalErrorMessage(true);
+            }
+        }
+        setConfirmationCodeModalLoading(false);
     };
 
-    setConfirmationCodeModalMessage("");
-    setShowConfirmationCodeModalErrorMessage(false);
-    setConfirmationCodeModalLoading(true);
 
-    if (currentAction === Actions.Delete) {
-      let response = await deleteAccountConfirm(confirmationCode);
-      if (response.statusCode === 200) {
-        window.location.reload();
-      }
-      else {
-        setShowConfirmationCodeModalErrorMessage(true);
-      }
-    }
-    else if (currentAction === Actions.Username) {
-      let response = await changeUsernameConfirm(confirmationCode);
-      if (response.statusCode === 200) {
-        window.location.reload();
-      }
-      else {
-        setShowConfirmationCodeModalErrorMessage(true);
-      }
-    }
-    else if (currentAction === Actions.Password) {
-      let response = await changePasswordConfirm(confirmationCode);
-      if (response.statusCode === 200) {
-        window.location.reload();
-      }
-      else {
-        setShowConfirmationCodeModalErrorMessage(true);
-      }
-    }
-    else if (currentAction === Actions.EmailStepOne) {
-      let response = await changeEmailStepOneConfirm(confirmationCode);
-      if (response.statusCode === 200) {
-        setConfirmationCodeModalMessage(language.dictionary.confirmationEmailSentToNew);
-        setCurrentAction(Actions.EmailStepTwo);
-        setConfirmationCodeModalLoading(false);
-      }
-      else {
-        setShowConfirmationCodeModalErrorMessage(true);
-      }
-    }
-    else if (currentAction === Actions.EmailStepTwo) {
-      let response = await changeEmailStepTwoConfirm(confirmationCode);
-      if (response.statusCode === 200) {
-        window.location.reload();
-      }
-      else {
-        setShowConfirmationCodeModalErrorMessage(true);
-      }
-    }
-    setConfirmationCodeModalLoading(false);
-  };
+    const handleCancelConfirmations = async () => {
+        setLoadingCancelConfirmations(true);
+
+        setCancelConfirmationsErrorMessage("");
+        setShowCancelConfirmationsSuccessMessage(false);
+
+        let response = await cancelConfirmations();
+        if (response.statusCode === 200) {
+            setShowCancelConfirmationsSuccessMessage(true);
+        }
+        else {
+            setCancelConfirmationsErrorMessage(`Error code: ${response.statusCode}`);
+        }
+        setLoadingCancelConfirmations(false);
+    };
 
 
-  const handleCancelConfirmations = async () => {
-    setLoadingCancelConfirmations(true);
+    const handleDeleteAccount = async () => {
+        setLoadingDeleteAccount(true);
 
-    setCancelConfirmationsErrorMessage("");
-    setShowCancelConfirmationsSuccessMessage(false);
+        setDeleteAccountErrorMessage("");
 
-    let response = await cancelConfirmations();
-    if (response.statusCode === 200) {
-      setShowCancelConfirmationsSuccessMessage(true);
-    }
-    else {
-      setCancelConfirmationsErrorMessage(`Error code: ${response.statusCode}`);
-    }
-    setLoadingCancelConfirmations(false);
-  };
+        let response = await deleteAccount();
+        if (response.statusCode === 200) {
+            setCurrentAction(Actions.Delete);
+            setConfirmationCodeModalMessage(language.dictionary.confirmationEmailSent);
+            setShowConfirmationCodeModal(true);
+        }
+        else {
+            setDeleteAccountErrorMessage(`Error code: ${response.statusCode}`);
+        }
+        setLoadingDeleteAccount(false);
+    };
 
+    const handleChangeUsername = async (username: string) => {
+        setLoadingChangeUsername(true);
 
-  const handleDeleteAccount = async () => {
-    setLoadingDeleteAccount(true);
+        setChangeUsernameErrorMessage("");
 
-    setDeleteAccountErrorMessage("");
-
-    let response = await deleteAccount();
-    if (response.statusCode === 200) {
-      setCurrentAction(Actions.Delete);
-      setConfirmationCodeModalMessage(language.dictionary.confirmationEmailSent);
-      setShowConfirmationCodeModal(true);
-    }
-    else {
-      setDeleteAccountErrorMessage(`Error code: ${response.statusCode}`);
-    }
-    setLoadingDeleteAccount(false);
-  };
-
-  const handleChangeUsername = async (username: string) => {
-    setLoadingChangeUsername(true);
-
-    setChangeUsernameErrorMessage("");
-
-    let response = await changeUsername(username);
-    if (response.statusCode === 200) {
-      setCurrentAction(Actions.Username);
-      setConfirmationCodeModalMessage(language.dictionary.confirmationEmailSent);
-      setShowConfirmationCodeModal(true);
-    }
-    else {
-      setChangeUsernameErrorMessage(`Error code: ${response.statusCode}`);
-    }
-    setLoadingChangeUsername(false);
-  };
+        let response = await changeUsername(username);
+        if (response.statusCode === 200) {
+            setCurrentAction(Actions.Username);
+            setConfirmationCodeModalMessage(language.dictionary.confirmationEmailSent);
+            setShowConfirmationCodeModal(true);
+        }
+        else {
+            setChangeUsernameErrorMessage(`Error code: ${response.statusCode}`);
+        }
+        setLoadingChangeUsername(false);
+    };
 
 
-  const handleChangePassword = async (password: string) => {
-    setLoadingChangePassword(true);
+    const handleChangePassword = async (password: string) => {
+        setLoadingChangePassword(true);
 
-    setChangePasswordErrorMessage("");
+        setChangePasswordErrorMessage("");
 
-    let response = await changePassword(password);
-    if (response.statusCode === 200) {
-      setCurrentAction(Actions.Password);
-      setConfirmationCodeModalMessage(language.dictionary.confirmationEmailSent);
-      setShowConfirmationCodeModal(true);
-    }
-    else {
-      setChangePasswordErrorMessage(`Error code: ${response.statusCode}`);
-    }
-    setLoadingChangePassword(false);
-  };
+        let response = await changePassword(password);
+        if (response.statusCode === 200) {
+            setCurrentAction(Actions.Password);
+            setConfirmationCodeModalMessage(language.dictionary.confirmationEmailSent);
+            setShowConfirmationCodeModal(true);
+        }
+        else {
+            setChangePasswordErrorMessage(`Error code: ${response.statusCode}`);
+        }
+        setLoadingChangePassword(false);
+    };
 
 
-  const handleChangeEmail = async (email: string) => {
-    setLoadingChangeEmail(true);
+    const handleChangeEmail = async (email: string) => {
+        setLoadingChangeEmail(true);
 
-    setChangePasswordErrorMessage("");
+        setChangePasswordErrorMessage("");
 
-    let response = await changeEmail(email);
-    if (response.statusCode === 200) {
-      setCurrentAction(Actions.EmailStepOne);
-      setConfirmationCodeModalMessage(language.dictionary.confirmationEmailSentToOriginal);
-      setShowConfirmationCodeModal(true);
-    }
-    else {
-      setChangeEmailErrorMessage(`Error code: ${response.statusCode}`);
-    }
-    setLoadingChangeEmail(false);
-  };
+        let response = await changeEmail(email);
+        if (response.statusCode === 200) {
+            setCurrentAction(Actions.EmailStepOne);
+            setConfirmationCodeModalMessage(language.dictionary.confirmationEmailSentToOriginal);
+            setShowConfirmationCodeModal(true);
+        }
+        else {
+            setChangeEmailErrorMessage(`Error code: ${response.statusCode}`);
+        }
+        setLoadingChangeEmail(false);
+    };
 
-  return (
-    <div>
-      <Modal show={showConfirmationCodeModal ? false : show} onHide={onHide}>
-        <Modal.Header closeButton>
-          <Modal.Title>{language.dictionary.settings}</Modal.Title>
-        </Modal.Header>
+    return (
+        <div>
+            <Modal show={showConfirmationCodeModal ? false : show} onHide={onHide}>
+                <Modal.Header closeButton>
+                    <Modal.Title>{language.dictionary.settings}</Modal.Title>
+                </Modal.Header>
 
-        <Modal.Body className="forms-container">
+                <Modal.Body className="forms-container">
 
-          <Accordion defaultActiveKey="0">
+                    <ThemeSelector />
+                    <CancelConfirmationsButton loading={loadingCancelConfirmations} onCancel={() => handleCancelConfirmations()} />
+                    <Alert variant="danger" hidden={!cancelConfirmationsErrorMessage}>{cancelConfirmationsErrorMessage}</Alert>
+                    <Alert variant="success" hidden={!showCancelConfirmationsSuccessMessage}>{language.dictionary.pendingConfirmationsCanceledSuccessfully}</Alert>
 
-            <Accordion.Item eventKey="0">
-              <Accordion.Header>{language.dictionary.changeEmail}</Accordion.Header>
-              <Accordion.Body>
-                <EmailChangeForm
-                  currentEmail={currentEmail}
-                  loading={loadingChangeEmail}
-                  onSubmit={(email) => handleChangeEmail(email)}
-                />
-                <Alert variant="danger" hidden={!changeEmailErrorMessage}>{changeEmailErrorMessage}</Alert>
-              </Accordion.Body>
-            </Accordion.Item>
+                    <Accordion defaultActiveKey="0">
 
-            <Accordion.Item eventKey="1">
-              <Accordion.Header>{language.dictionary.changeUsername}</Accordion.Header>
-              <Accordion.Body>
-                <UsernameChangeForm
-                  currentUsername={currentUsername}
-                  loading={loadingChangeUsername}
-                  onSubmit={(username) => handleChangeUsername(username)}
-                />
-                <Alert variant="danger" hidden={!changeUsernameErrorMessage}>{changeUsernameErrorMessage}</Alert>
-              </Accordion.Body>
-            </Accordion.Item>
+                        <Accordion.Item eventKey="0">
+                            <Accordion.Header>{language.dictionary.changeEmail}</Accordion.Header>
+                            <Accordion.Body className="form">
+                                <EmailChangeForm
+                                    currentEmail={currentEmail}
+                                    loading={loadingChangeEmail}
+                                    onSubmit={(email) => handleChangeEmail(email)}
+                                />
+                                <Alert variant="danger" hidden={!changeEmailErrorMessage}>{changeEmailErrorMessage}</Alert>
+                            </Accordion.Body>
+                        </Accordion.Item>
 
-            <Accordion.Item eventKey="2">
-              <Accordion.Header>{language.dictionary.changePassword}</Accordion.Header>
-              <Accordion.Body>
-                <PasswordChangeForm
-                  loading={loadingChangePassword}
-                  onSubmit={(password) => handleChangePassword(password)}
-                />
-                <Alert variant="danger" hidden={!changePasswordErrorMessage}>{changePasswordErrorMessage}</Alert>
-              </Accordion.Body>
-            </Accordion.Item>
+                        <Accordion.Item eventKey="1">
+                            <Accordion.Header>{language.dictionary.changeUsername}</Accordion.Header>
+                            <Accordion.Body className="form">
+                                <UsernameChangeForm
+                                    currentUsername={currentUsername}
+                                    loading={loadingChangeUsername}
+                                    onSubmit={(username) => handleChangeUsername(username)}
+                                />
+                                <Alert variant="danger" hidden={!changeUsernameErrorMessage}>{changeUsernameErrorMessage}</Alert>
+                            </Accordion.Body>
+                        </Accordion.Item>
 
-            <Accordion.Item eventKey="3">
-              <Accordion.Header>{language.dictionary.deleteAccount}</Accordion.Header>
-              <Accordion.Body>
-                <DeleteAccountForm
-                  loading={loadingDeleteAccount}
-                  onDelete={() => handleDeleteAccount()}
-                />
-                <br />
-                <Alert variant="danger" hidden={!deleteAccountErrorMessage}>{deleteAccountErrorMessage}</Alert>
-              </Accordion.Body>
-            </Accordion.Item>
+                        <Accordion.Item eventKey="2">
+                            <Accordion.Header>{language.dictionary.changePassword}</Accordion.Header>
+                            <Accordion.Body className="form">
+                                <PasswordChangeForm
+                                    loading={loadingChangePassword}
+                                    onSubmit={(password) => handleChangePassword(password)}
+                                />
+                                <Alert variant="danger" hidden={!changePasswordErrorMessage}>{changePasswordErrorMessage}</Alert>
+                            </Accordion.Body>
+                        </Accordion.Item>
 
-          </Accordion>
-          <CancelConfirmationsButton loading={loadingCancelConfirmations} onCancel={() => handleCancelConfirmations()} />
-          <Alert variant="danger" hidden={!cancelConfirmationsErrorMessage}>{cancelConfirmationsErrorMessage}</Alert>
-          <Alert variant="success" hidden={!showCancelConfirmationsSuccessMessage}>{language.dictionary.pendingConfirmationsCanceledSuccessfully}</Alert>
-          <LogoutButton />
-        </Modal.Body>
-      </Modal>
-      <ConfirmationCodeModal
-        show={showConfirmationCodeModal}
-        showErrorMessage={showConfirmationCodeModalErrorMessage}
-        onHide={() => setShowConfirmationCodeModal(false)}
-        onConfirm={(value) => handleConfirmationCodeModalConfirm(value)}
-        message={confirmationCodeModalMessage}
-        loading={confirmationCodeModalLoading}
-      />
+                        <Accordion.Item eventKey="3">
+                            <Accordion.Header>{language.dictionary.deleteAccount}</Accordion.Header>
+                            <Accordion.Body className="form">
+                                <DeleteAccountForm
+                                    loading={loadingDeleteAccount}
+                                    onDelete={() => handleDeleteAccount()}
+                                />
+                                <Alert variant="danger" hidden={!deleteAccountErrorMessage}>{deleteAccountErrorMessage}</Alert>
+                            </Accordion.Body>
+                        </Accordion.Item>
 
-    </div>
-  );
+                    </Accordion>
+                    <LogoutButton />
+                </Modal.Body>
+            </Modal>
+            <ConfirmationCodeModal
+                show={showConfirmationCodeModal}
+                showErrorMessage={showConfirmationCodeModalErrorMessage}
+                onHide={() => setShowConfirmationCodeModal(false)}
+                onConfirm={(value) => handleConfirmationCodeModalConfirm(value)}
+                message={confirmationCodeModalMessage}
+                loading={confirmationCodeModalLoading}
+            />
+
+        </div>
+    );
 };
 
 export default SettingsModal;

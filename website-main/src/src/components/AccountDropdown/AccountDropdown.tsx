@@ -1,5 +1,5 @@
 import "./accountDropdown.scss";
-import { language } from "../../main";
+import { changeColorScheme, getColorScheme, language } from "../../main";
 import { Image, Dropdown, Button } from "react-bootstrap";
 import AuthenticationModal from "../AuthenticationModal/AuthenticationModal";
 import SettingsModal from "../SettingsModal/SettingsModal";
@@ -10,7 +10,6 @@ const AccountDropdown = () => {
   const [authenticationModalVisibility, setAuthenticationModalVisibility] = useState(false);
   const [settingsModalVisibility, setSettingsModalVisibility] = useState(false);
   const [username, setUsername] = useState("");
-
 
   const handleLogout = () => {
     logout();
@@ -32,7 +31,7 @@ const AccountDropdown = () => {
     <div>
       {username ? (
         <Dropdown>
-          <Dropdown.Toggle variant="outline-dark" id="dropdown-basic" className="account-dropdown">
+          <Dropdown.Toggle variant="transparent" id="dropdown-basic" className="account-dropdown border">
             <Image
               src="https://pagman.org/pagman.jpg"
               roundedCircle

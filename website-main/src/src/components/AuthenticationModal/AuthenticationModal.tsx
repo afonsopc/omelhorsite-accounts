@@ -94,7 +94,7 @@ const AuthenticationModal: React.FC<AuthenticationModalProps> = ({ show, onHide,
   return (
     <div>
       <Modal show={showConfirmationCodeModal ? false : show} onHide={onHide} >
-        <Modal.Header closeButton>
+        <Modal.Header closeButton className="bg-body-tertiary text-body-tertiary">
           <Modal.Title>
             {(activeTab === "sign-in") ?
               `${language.dictionary.signIn}`
@@ -135,7 +135,7 @@ const AuthenticationModal: React.FC<AuthenticationModalProps> = ({ show, onHide,
           <Alert className="alert-success" hidden={!showSuccessMessage}>{language.dictionary.confirmationEmailSent}</Alert>
 
         </Modal.Body>
-        <Modal.Footer>
+        <Modal.Footer className="bg-body-tertiary text-body-tertiary">
           <Button variant="secondary" onClick={onHide}>
             {language.dictionary.close}
           </Button>

@@ -40,7 +40,7 @@ const SignUpForm = ({
 
             <Form.Group controlId="password">
                 <Form.Label>{language.dictionary.password}</Form.Label>
-                <PasswordInput value={password} onChange={(e) => onPasswordChange(e)} />
+                <PasswordInput required value={password} onChange={(e) => onPasswordChange(e)} />
             </Form.Group>
         </Form >
     )

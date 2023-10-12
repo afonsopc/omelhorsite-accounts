@@ -1,11 +1,10 @@
 FROM rust:latest
 
-WORKDIR /usr/src/service-accounts
-COPY . .
-
-RUN cargo install --path .
-
 WORKDIR /
-RUN rm -rf /usr/src/service-accounts
+COPY . /app
+
+RUN cargo install --path /app
+
+RUN rm -rf /app
 
 CMD ["service-accounts"]

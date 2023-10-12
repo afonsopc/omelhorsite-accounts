@@ -25,11 +25,33 @@ export const sleep = (seconds: number) => {
   return new Promise(resolve => setTimeout(resolve, secondsToMiliseconds));
 }
 
+export const changeColorScheme = () => {
+  const htmlElement = document.getElementById("html-element");
+  if (htmlElement === null) { return }
+  const currentScheme = htmlElement.getAttribute("data-bs-theme");
+
+  if (currentScheme === "light") {
+    htmlElement.setAttribute("data-bs-theme", "dark");
+  } else {
+    htmlElement.setAttribute("data-bs-theme", "light");
+  }
+}
+
+export const getColorScheme = () => {
+  const htmlElement = document.getElementById("html-element");
+  if (htmlElement === null) { return null }
+  const currentScheme = htmlElement.getAttribute("data-bs-theme");
+  return currentScheme
+}
+
+
 export const language = getLanguage();
 
 const Main = () => {
   useEffect(() => {
     document.title = language.dictionary.websiteName;
+    setThemeBasedOnUserPreference();
+    startListenerToThemeChange();
   }, []);
   console.log(language);
 
@@ -47,6 +69,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 )
 
 import axios, { AxiosError, AxiosResponse } from 'axios';
+import { setThemeBasedOnUserPreference, startListenerToThemeChange } from "./themes";
 
 export interface ApiResponse<T> {
   statusCode: number;

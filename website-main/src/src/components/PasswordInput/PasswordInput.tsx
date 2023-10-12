@@ -4,10 +4,11 @@ import { language } from '../../main'
 
 interface PasswordInputProps {
     value: string;
+    required?: boolean;
     onChange: (e: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
 }
 
-const PasswordInput = ({ value, onChange }: PasswordInputProps) => {
+const PasswordInput = ({ value, onChange, required }: PasswordInputProps) => {
     const [showPassword, setShowPassword] = useState(false);
 
     return (
@@ -15,7 +16,7 @@ const PasswordInput = ({ value, onChange }: PasswordInputProps) => {
             <Form.Control
                 type={showPassword ? "text" : "password"}
                 placeholder={language.dictionary.enterPassword}
-                required
+                required={required ? required : false}
                 value={value}
                 onChange={(e) => onChange(e)}
             />

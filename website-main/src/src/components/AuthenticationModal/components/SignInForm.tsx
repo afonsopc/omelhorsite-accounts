@@ -15,7 +15,7 @@ const SignInForm = ({
 }: SignInProps) => {
 
     return (
-        <Form>
+        <Form className="form">
             <Form.Group controlId="email">
                 <Form.Label>{language.dictionary.email}</Form.Label>
                 <Form.Control
@@ -28,7 +28,7 @@ const SignInForm = ({
 
             <Form.Group controlId="password">
                 <Form.Label>{language.dictionary.password}</Form.Label>
-                <PasswordInput value={password} onChange={(e) => onPasswordChange(e)} />
+                <PasswordInput required value={password} onChange={(e) => onPasswordChange(e)} />
             </Form.Group>
         </Form >
     )

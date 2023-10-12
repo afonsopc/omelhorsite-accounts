@@ -1,11 +1,11 @@
 import "./header.scss";
-import { Navbar, Container, Image } from "react-bootstrap";
+import { Navbar, Container, Image, Button } from "react-bootstrap";
 import { language } from "../../main";
 import AccountDropdown from "../AccountDropdown/AccountDropdown";
 
 function Header() {
   return (
-    <Navbar bg="light" variant="light" expand="lg" className="border-bottom">
+    <Navbar expand="lg" className="text-body-secondary bg-body-secondary border-bottom">
       <Container>
         <Navbar.Brand href="/" className="brand-container gap-4">
           <Image
@@ -17,7 +17,7 @@ function Header() {
         </Navbar.Brand>
         <AccountDropdown />
       </Container>
-    </Navbar>
+    </Navbar >
   );
 }
 

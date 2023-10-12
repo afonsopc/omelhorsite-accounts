@@ -9,7 +9,6 @@ interface DeleteAccountFormProps {
 const DeleteAccountForm = ({ loading, onDelete }: DeleteAccountFormProps) => {
   return (
     <Form.Group controlId="selectedLanguage" className="form-container">
-
       <Button
         variant="danger"
         disabled={loading}
