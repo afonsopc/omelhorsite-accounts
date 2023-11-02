@@ -1,5 +1,5 @@
 import "./header.scss";
-import { Navbar, Container, Image, Button } from "react-bootstrap";
+import { Navbar, Container, Image } from "react-bootstrap";
 import { language } from "../../main";
 import AccountDropdown from "../AccountDropdown/AccountDropdown";
 

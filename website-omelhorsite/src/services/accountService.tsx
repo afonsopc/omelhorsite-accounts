@@ -1,6 +1,6 @@
 import { ApiResponse, sendApiRequest } from '../main';
 
-const API_URL = "http://localhost:3002"
+const API_URL = "http://localhost:3001"
 
 export interface ConfirmationCode {
     confirmationCode: string

@@ -1,5 +1,5 @@
 import "./accountDropdown.scss";
-import { changeColorScheme, getColorScheme, language } from "../../main";
+import { language } from "../../main";
 import { Image, Dropdown, Button } from "react-bootstrap";
 import AuthenticationModal from "../AuthenticationModal/AuthenticationModal";
 import SettingsModal from "../SettingsModal/SettingsModal";

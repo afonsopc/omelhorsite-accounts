@@ -20,25 +20,21 @@ services:
 
   service-accounts:
     container_name: service-accounts
+    image: service-accounts
     depends_on:
       - service-accounts-database
     ports:
-      - 3002:3002
+      - 3001:3001
     env_file:
       - ./service-accounts/config.env
     environment:
-      - SERVER_URL=0.0.0.0:3002
+      - SERVER_URL=0.0.0.0:3001
       - DATABASE_URL=postgres://user:password@service-accounts-database:3001/user
-    build:
-      context: ./service-accounts
     networks:
       - service-accounts-network
 
-  # website-main:
-  #   container_name: website-main
-  #   depends_on:
-  #     - service-accounts-database
-  #   ports:
-  #     - 3000:3000
-  #   build: 
-  #     context: ./website-main
+  website-omelhorsite:
+    container_name: website-omelhorsite
+    image: website-omelhorsite
+    ports:
+      - 3000:3000
