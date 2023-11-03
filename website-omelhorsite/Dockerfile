@@ -13,6 +13,6 @@ RUN npm run build
 
 # Serve the website
 
-FROM afonsopc/static-web-server AS runtime
+FROM httpd:2.4 AS runtime
 
-COPY --from=builder /app/dist /public
+COPY --from=builder /app/dist /usr/local/apache2/htdocs/

@@ -1,6 +1,6 @@
 import { ApiResponse, sendApiRequest } from '../main';
 
-const API_URL = "http://localhost:3001"
+const API_URL = "https://accounts.omelhorsite.pt"
 
 export interface ConfirmationCode {
     confirmationCode: string
