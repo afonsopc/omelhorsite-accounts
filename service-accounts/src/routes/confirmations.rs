@@ -1,15 +1,16 @@
+use crate::{
+    accounts::{delete::delete_account_change_from_account_id, get::get_account_from_token},
+    error::error_to_status_code,
+    prelude::*,
+    utils::random::get_random_process_id,
+    AppState,
+};
 use axum::{
     extract::State,
     headers::{authorization::Bearer, Authorization},
     http::StatusCode,
     response::IntoResponse,
     TypedHeader,
-};
-
-use crate::{
-    accounts::{delete::delete_account_change_from_account_id, get::get_account_from_token},
-    utils::random::get_random_process_id,
-    AppState,
 };
 
 pub async fn delete_confirmations_request(
@@ -26,7 +27,8 @@ pub async fn delete_confirmations_request(
     let account = match get_account_from_token(&token, &database_pool).await {
         Ok(value) => value,
         Err(err) => {
-            let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+            let status_code_number = error_to_status_code(err.clone());
+            let status_code = StatusCode::from_u16(status_code_number).unwrap();
             println!(
                 "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                 err
@@ -38,7 +40,8 @@ pub async fn delete_confirmations_request(
     match delete_account_change_from_account_id(&account.account_id, &database_pool).await {
         Ok(_) => (),
         Err(err) => {
-            let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+            let status_code_number = error_to_status_code(err.clone());
+            let status_code = StatusCode::from_u16(status_code_number).unwrap();
             println!(
                 "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                 err

@@ -1,20 +1,21 @@
-use axum::{
-    extract::State,
-    headers::{authorization::Bearer, Authorization},
-    http::StatusCode,
-    response::IntoResponse,
-    Json, TypedHeader,
-};
-
 use crate::{
     accounts::{
         get::get_account_from_token,
         models::AccountChange,
         update::{confirm_account_change, create_account_change},
     },
+    error::error_to_status_code,
+    prelude::*,
     routes::models::ConfirmationCode,
     utils::{config::AppConfig, email::send_confirmation_email, random::get_random_process_id},
     AppState,
+};
+use axum::{
+    extract::State,
+    headers::{authorization::Bearer, Authorization},
+    http::StatusCode,
+    response::IntoResponse,
+    Json, TypedHeader,
 };
 
 pub async fn delete_account_request(
@@ -34,7 +35,8 @@ pub async fn delete_account_request(
     let account = match get_account_from_token(&token, database_pool).await {
         Ok(value) => value,
         Err(err) => {
-            let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+            let status_code_number = error_to_status_code(err.clone());
+            let status_code = StatusCode::from_u16(status_code_number).unwrap();
             println!(
                 "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                 err
@@ -55,7 +57,8 @@ pub async fn delete_account_request(
         match create_account_change(&account.account_id, &account_change, database_pool).await {
             Ok(value) => value,
             Err(err) => {
-                let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+                let status_code_number = error_to_status_code(err.clone());
+                let status_code = StatusCode::from_u16(status_code_number).unwrap();
                 println!(
                     "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                     err
@@ -74,7 +77,8 @@ pub async fn delete_account_request(
     {
         Ok(value) => value,
         Err(err) => {
-            let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+            let status_code_number = error_to_status_code(err.clone());
+            let status_code = StatusCode::from_u16(status_code_number).unwrap();
             println!(
                 "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                 err
@@ -102,7 +106,8 @@ pub async fn confirm_delete_account_request(
     let account = match get_account_from_token(&token, &database_pool).await {
         Ok(value) => value,
         Err(err) => {
-            let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+            let status_code_number = error_to_status_code(err.clone());
+            let status_code = StatusCode::from_u16(status_code_number).unwrap();
             println!(
                 "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                 err
@@ -114,7 +119,8 @@ pub async fn confirm_delete_account_request(
     match confirm_account_change(&account.account_id, &confirmation_code, &database_pool).await {
         Ok(value) => value,
         Err(err) => {
-            let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+            let status_code_number = error_to_status_code(err.clone());
+            let status_code = StatusCode::from_u16(status_code_number).unwrap();
             println!(
                 "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                 err

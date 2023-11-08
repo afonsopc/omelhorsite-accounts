@@ -1,6 +1,6 @@
 //! Main Crate Error
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, Debug, Clone)]
 pub enum Error {
     #[error("Convert config variable error: \"{0}\"")]
     ConvertConfigVariable(String),
@@ -88,4 +88,15 @@ pub enum Error {
 
     #[error("Delete expired unverified accounts not awaiting confirmation query error: \"{0}\"")]
     DeleteExpiredUnverifiedAccountsNotAwaitingConfirmationQuery(String),
+}
+
+pub fn error_to_status_code(error: Error) -> u16 {
+    match error {
+        Error::AccountNotFound(_) => 404,
+        Error::AccountChangeNotFound(_) => 404,
+        Error::CreateAccountDuplicateKey(_) => 409,
+        Error::CreateAccountChangeDuplicateKey(_) => 409,
+        Error::PlainNotEqualToEncryptedString() => 401,
+        _ => 500,
+    }
 }

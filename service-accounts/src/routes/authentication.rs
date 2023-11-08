@@ -1,3 +1,4 @@
+use super::models::{AuthenticationCredentials, Email, EmailAndConfirmationCode};
 use crate::{
     accounts::{
         get::{
@@ -7,6 +8,8 @@ use crate::{
         models::AccountChange,
         update::{confirm_account_change, create_account_change},
     },
+    error::error_to_status_code,
+    prelude::*,
     routes::models::{AccountInfoWithoutPassword, Token},
     utils::{config::AppConfig, email::send_confirmation_email, random::get_random_process_id},
     AppState,
@@ -18,8 +21,6 @@ use axum::{
     response::IntoResponse,
     Json, TypedHeader,
 };
-
-use super::models::{AuthenticationCredentials, Email, EmailAndConfirmationCode};
 
 pub async fn get_account_request(
     TypedHeader(authorization): TypedHeader<Authorization<Bearer>>,
@@ -35,7 +36,8 @@ pub async fn get_account_request(
     let account = match get_account_from_token(&token, &database_pool).await {
         Ok(value) => value,
         Err(err) => {
-            let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+            let status_code_number = error_to_status_code(err.clone());
+            let status_code = StatusCode::from_u16(status_code_number).unwrap();
             println!(
                 "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                 err
@@ -66,7 +68,8 @@ pub async fn authenticate_account_request(
         match get_account_from_credentials(&body.email, &body.password, &database_pool).await {
             Ok(value) => value,
             Err(err) => {
-                let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+                let status_code_number = error_to_status_code(err.clone());
+                let status_code = StatusCode::from_u16(status_code_number).unwrap();
                 println!(
                     "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                     err
@@ -78,7 +81,8 @@ pub async fn authenticate_account_request(
     let token = match get_account_token(&account.account_id, &database_pool).await {
         Ok(value) => value,
         Err(err) => {
-            let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+            let status_code_number = error_to_status_code(err.clone());
+            let status_code = StatusCode::from_u16(status_code_number).unwrap();
             println!(
                 "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                 err
@@ -108,7 +112,8 @@ pub async fn authenticate_account_without_credentials_request(
     let account_id = match get_account_id_from_email(&body.email, &database_pool).await {
         Ok(value) => value,
         Err(err) => {
-            let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+            let status_code_number = error_to_status_code(err.clone());
+            let status_code = StatusCode::from_u16(status_code_number).unwrap();
             println!(
                 "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                 err
@@ -129,7 +134,8 @@ pub async fn authenticate_account_without_credentials_request(
         match create_account_change(&account_id, &account_change, &database_pool).await {
             Ok(value) => value,
             Err(err) => {
-                let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+                let status_code_number = error_to_status_code(err.clone());
+                let status_code = StatusCode::from_u16(status_code_number).unwrap();
                 println!(
                     "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                     err
@@ -148,7 +154,8 @@ pub async fn authenticate_account_without_credentials_request(
     {
         Ok(value) => value,
         Err(err) => {
-            let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+            let status_code_number = error_to_status_code(err.clone());
+            let status_code = StatusCode::from_u16(status_code_number).unwrap();
             println!(
                 "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                 err
@@ -176,7 +183,8 @@ pub async fn confirm_authenticate_account_without_credentials_request(
     let account_id = match get_account_id_from_email(&body.email, &database_pool).await {
         Ok(value) => value,
         Err(err) => {
-            let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+            let status_code_number = error_to_status_code(err.clone());
+            let status_code = StatusCode::from_u16(status_code_number).unwrap();
             println!(
                 "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                 err
@@ -188,7 +196,8 @@ pub async fn confirm_authenticate_account_without_credentials_request(
     match confirm_account_change(&account_id, &confirmation_code, &database_pool).await {
         Ok(value) => value,
         Err(err) => {
-            let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+            let status_code_number = error_to_status_code(err.clone());
+            let status_code = StatusCode::from_u16(status_code_number).unwrap();
             println!(
                 "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                 err
@@ -200,7 +209,8 @@ pub async fn confirm_authenticate_account_without_credentials_request(
     let token = match get_account_token(&account_id, &database_pool).await {
         Ok(value) => value,
         Err(err) => {
-            let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+            let status_code_number = error_to_status_code(err.clone());
+            let status_code = StatusCode::from_u16(status_code_number).unwrap();
             println!(
                 "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                 err

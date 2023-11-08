@@ -1,11 +1,3 @@
-use axum::{
-    extract::State,
-    headers::{authorization::Bearer, Authorization},
-    http::StatusCode,
-    response::IntoResponse,
-    Json, TypedHeader,
-};
-
 use crate::{
     accounts::{
         create::create_account,
@@ -13,10 +5,18 @@ use crate::{
         models::{Account, AccountChange},
         update::{confirm_account_change, create_account_change},
     },
+    error::error_to_status_code,
     prelude::*,
     routes::models::Token,
     utils::{config::AppConfig, email::send_confirmation_email, random::get_random_process_id},
     AppState,
+};
+use axum::{
+    extract::State,
+    headers::{authorization::Bearer, Authorization},
+    http::StatusCode,
+    response::IntoResponse,
+    Json, TypedHeader,
 };
 
 use super::models::{AccountInfo, ConfirmationCode};
@@ -42,13 +42,9 @@ pub async fn create_account_request(
 
     let account_id = match create_account(&account, database_pool).await {
         Ok(value) => value,
-        Err(Error::CreateAccountDuplicateKey(err)) => {
-            let status_code = StatusCode::CONFLICT;
-            println!("{process_id} - Status: {status_code} Error: \"{}\"", err);
-            return status_code.into_response();
-        }
         Err(err) => {
-            let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+            let status_code_number = error_to_status_code(err.clone());
+            let status_code = StatusCode::from_u16(status_code_number).unwrap();
             println!(
                 "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                 err
@@ -68,7 +64,8 @@ pub async fn create_account_request(
         match create_account_change(&account_id, &account_change, database_pool).await {
             Ok(value) => value,
             Err(err) => {
-                let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+                let status_code_number = error_to_status_code(err.clone());
+                let status_code = StatusCode::from_u16(status_code_number).unwrap();
                 println!(
                     "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                     err
@@ -87,7 +84,8 @@ pub async fn create_account_request(
     {
         Ok(value) => value,
         Err(err) => {
-            let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+            let status_code_number = error_to_status_code(err.clone());
+            let status_code = StatusCode::from_u16(status_code_number).unwrap();
             println!(
                 "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                 err
@@ -99,7 +97,8 @@ pub async fn create_account_request(
     let token = match get_account_token(&account_id, database_pool).await {
         Ok(value) => value,
         Err(err) => {
-            let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+            let status_code_number = error_to_status_code(err.clone());
+            let status_code = StatusCode::from_u16(status_code_number).unwrap();
             println!(
                 "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                 err
@@ -129,7 +128,8 @@ pub async fn confirm_account_request(
     let account = match get_account_from_token(&token, &database_pool).await {
         Ok(value) => value,
         Err(err) => {
-            let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+            let status_code_number = error_to_status_code(err.clone());
+            let status_code = StatusCode::from_u16(status_code_number).unwrap();
             println!(
                 "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                 err
@@ -141,7 +141,8 @@ pub async fn confirm_account_request(
     match confirm_account_change(&account.account_id, &confirmation_code, &database_pool).await {
         Ok(value) => value,
         Err(err) => {
-            let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+            let status_code_number = error_to_status_code(err.clone());
+            let status_code = StatusCode::from_u16(status_code_number).unwrap();
             println!(
                 "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                 err
@@ -153,7 +154,8 @@ pub async fn confirm_account_request(
     let token = match get_account_token(&account.account_id, &database_pool).await {
         Ok(value) => value,
         Err(err) => {
-            let status_code = StatusCode::INTERNAL_SERVER_ERROR;
+            let status_code_number = error_to_status_code(err.clone());
+            let status_code = StatusCode::from_u16(status_code_number).unwrap();
             println!(
                 "{process_id} - Status: \"{status_code}\" Error: \"{}\"",
                 err
