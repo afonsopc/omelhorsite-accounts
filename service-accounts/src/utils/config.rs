@@ -12,9 +12,12 @@ pub struct AppConfig {
     pub create_id_retry_limit: usize,
     pub jwt_secret_key: String,
     pub string_encryption_processing_cost: u32,
+    pub email_username: String,
     pub email_address: String,
-    pub email_password: String,
     pub smtp_relay: String,
+    pub smtp_port: u16,
+    pub smtp_username: String,
+    pub smtp_password: String,
     pub account_creation_confirmation_email_subject: String,
     pub account_creation_confirmation_email_title_message: String,
     pub account_change_username_confirmation_email_subject: String,
@@ -54,9 +57,6 @@ impl AppConfig {
             )?,
             process_id_length: environment_variable("PROCESS_ID_LENGTH")?,
             name: environment_variable("NAME")?,
-            email_address: environment_variable("EMAIL_ADDRESS")?,
-            email_password: environment_variable("EMAIL_PASSWORD")?,
-            smtp_relay: environment_variable("SMTP_RELAY")?,
             account_creation_confirmation_email_subject: environment_variable(
                 "ACCOUNT_CREATION_CONFIRMATION_EMAIL_SUBJECT",
             )?,
@@ -107,6 +107,12 @@ impl AppConfig {
             account_deletion_confirmation_email_title_message: environment_variable(
                 "ACCOUNT_DELETION_CONFIRMATION_EMAIL_TITLE_MESSAGE",
             )?,
+            email_username: environment_variable("EMAIL_USERNAME")?,
+            email_address: environment_variable("EMAIL_ADDRESS")?,
+            smtp_relay: environment_variable("SMTP_RELAY")?,
+            smtp_port: environment_variable("SMTP_PORT")?,
+            smtp_username: environment_variable("SMTP_USERNAME")?,
+            smtp_password: environment_variable("SMTP_PASSWORD")?,
         })
     }
 }

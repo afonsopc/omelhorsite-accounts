@@ -1,4 +1,4 @@
-import React, { useEffect } from "react"
+import { useEffect } from "react"
 import ReactDOM from "react-dom/client"
 import "./index.scss"
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -67,9 +67,7 @@ const Main = () => {
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <Main />
-  </React.StrictMode>,
+  <Main />
 )
 
 import axios, { AxiosError, AxiosResponse } from 'axios';

@@ -14,10 +14,12 @@ pub async fn send_email(
     body_html: &String,
 ) -> Result<()> {
     let app_config = config::AppConfig::load_from_env().unwrap();
-    let email_username = app_config.name;
+    let email_username = app_config.email_username;
     let email_address = app_config.email_address;
-    let email_password = app_config.email_password;
     let smtp_relay = app_config.smtp_relay;
+    let smtp_port = app_config.smtp_port;
+    let smtp_username = app_config.smtp_username;
+    let smtp_password = app_config.smtp_password;
 
     let sending: Mailbox = match f!("{email_username} <{email_address}>").parse() {
         Ok(value) => value,
@@ -39,13 +41,14 @@ pub async fn send_email(
         Err(err) => return Err(Error::SendEmailBuild(err.to_string())),
     };
 
-    let credentials = Credentials::new(email_address, email_password);
+    let credentials = Credentials::new(smtp_username, smtp_password);
 
-    let mailer = match SmtpTransport::relay(&smtp_relay) {
+    let mailer = match SmtpTransport::starttls_relay(&smtp_relay) {
         Ok(value) => value,
         Err(err) => return Err(Error::SendEmailConnectRelay(err.to_string())),
     }
     .credentials(credentials)
+    .port(smtp_port)
     .build();
 
     match mailer.send(&email) {
