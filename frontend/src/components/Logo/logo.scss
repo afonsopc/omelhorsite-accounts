@@ -1,0 +1,24 @@
+.logo-container {
+
+    .picture {
+        height: 100%;
+    }
+
+    &.with-user-picture {
+        .picture {
+            height: 75%;
+        }
+
+        .user {
+            rotate: -20deg;
+        }
+
+        .website {
+            rotate: 20deg;
+        }
+    }
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}

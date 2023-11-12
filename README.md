@@ -1,5 +1,2 @@
-O Melhor Site
-=============
-
-Este repositório alberga os variados micro serviços que compõem o melhor site de todos.
-
+# omelhorsite-frontend
+ Frontend from omelhorsite.pt
