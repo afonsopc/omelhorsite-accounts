@@ -28,4 +28,4 @@
 - **Returns**:
   - Status Code `201 Created` if the account is created successfully.
   - Status Code `422 Unprocessable Entity` if the request payload is invalid.
-  - Status Code `409 Conflict` if there is a unique constraint violation, along with the relevant constraint part in the response body. (ex. "handle", "email"...)
+  - Status Code `409 Conflict` if there is a unique constraint violation, along with the relevant constraint part in the response body. (ex. `handle`, `email`...)
