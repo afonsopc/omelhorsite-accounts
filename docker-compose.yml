@@ -10,7 +10,9 @@ services:
       - "POSTGRES_USER=user"
       - "POSTGRES_PASSWORD=password"
       - "PGDATA=/database"
-    command: "postgres -c log_statement=all -p 3000"
+    ports:
+      - 3001:3001
+    command: "postgres -c log_statement=all -p 3001"
 
   accounts:
     container_name: accounts
@@ -18,9 +20,9 @@ services:
     depends_on:
       - accounts-database
     environment:
-      - "SERVER_URL=0.0.0.0:3000"
-      - "DATABASE_URL=postgres://user:password@accounts-database:3000/user"
+      - "SERVER_HOST=0.0.0.0:3000"
+      - "DATABASE_URL=postgres://user:password@accounts-database:3001/user"
     env_file:
-      - "./config.env"
+      - "./.env"
     ports:
       - 3000:3000

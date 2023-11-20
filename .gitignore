@@ -1,3 +1,4 @@
-.git
-config.env
-accounts-database
+.git/
+.vscode/
+accounts-database/
+.env
