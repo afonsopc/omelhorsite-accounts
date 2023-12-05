@@ -1,8 +1,7 @@
+use crate::config::CONFIG;
 use async_std::task;
 use lazy_static::lazy_static;
 use sqlx::PgPool;
-
-use crate::config::CONFIG;
 
 lazy_static! {
     pub static ref DATABASE_POOL: PgPool = {

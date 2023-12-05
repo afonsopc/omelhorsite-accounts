@@ -1,31 +1,43 @@
 # omelhorsite-accounts
- Accounts service from omelhorsite.pt
 
-## Routes
+This document provides a brief overview of the API endpoints available in the application.
 
-#### `GET /`
+## Root
 
-- **Description**: Root endpoint.
-- **Returns**: A string with the message: "Deus quer, o homem sonha, a obra nasce."
+- **Endpoint:** `/`
+- **Method:** `GET`
+- **Response:** A string message.
 
-#### `POST /create`
+## Account Creation
 
-- **Description**: Create a new account.
-- **Request Payload**: JSON body with the following properties:
-  - `handle` (String): Account handle.
-  - `name` (String): Account name.
-  - `email` (String): Account email.
-  - `password` (String): Account password.
-  - `gender` (String): Account gender (`male`, `female`, or `not_specified`).
-  - `language` (String): Account language.
-- **Validation Rules**:
-  - `handle`: Minimum length of 1 character, maximum of the specified number in the environment.
-  - `name`: Minimum length of 1 character, maximum of the specified number in the environment.
-  - `email`: Must be a valid email address.
-  - `password`: Minimum length of 1 character.
-  - `gender`: One of: `male`, `female`, or `not_specified`.
-  - `language`: Minimum length of 1 character.
-- **Returns**:
-  - Status Code `201 Created` if the account is created successfully.
-  - Status Code `422 Unprocessable Entity` if the request payload is invalid.
-  - Status Code `409 Conflict` if there is a unique constraint violation, along with the relevant constraint part in the response body. (ex. `handle`, `email`...)
+### Begin Account Creation
+
+- **Endpoint:** `/create/begin`
+- **Method:** `POST`
+- **Request Body:**
+  - `handle`: String (required)
+  - `email`: String (required)
+- **Response:**
+  - `200 OK` if the account creation process has begun successfully.
+  - `422 Unprocessable Entity` if the request body is invalid.
+  - `409 Conflict` if the email or handle is already in use.
+  - `500 Internal Server Error` for any other errors.
+
+### Finish Account Creation
+
+- **Endpoint:** `/create/finish`
+- **Method:** `POST`
+- **Request Body:**
+  - `verification_code`: String (required)
+  - `handle`: String (required)
+  - `name`: String (required)
+  - `email`: String (required)
+  - `password`: String (required)
+  - `gender`: Enum (required) - Options: `male`, `female`, `not_specified`
+  - `theme`: Enum (required) - Options: `dark`, `light`, `automatic`
+  - `language`: String (required)
+- **Response:**
+  - `200 OK` if the account creation process has finished successfully.
+  - `422 Unprocessable Entity` if the request body is invalid.
+  - `404 Not Found` if the verification code for the given email and handle does not exist.
+  - `500 Internal Server Error` for any other errors.
