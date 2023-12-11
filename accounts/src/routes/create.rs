@@ -21,7 +21,8 @@ pub async fn begin_account_creation(mut req: tide::Request<()>) -> tide::Result 
     let body: BeginAccountCreationRequest = req.body_json().await?;
 
     if body.validate().is_err() {
-        let response = Response::new(StatusCode::UnprocessableEntity);
+        let mut response = Response::new(StatusCode::UnprocessableEntity);
+        response.set_error(body.validate().unwrap_err());
         return Ok(response);
     };
 
@@ -150,7 +151,8 @@ pub async fn finish_account_creation(mut req: tide::Request<()>) -> tide::Result
     let body: FinishAccountCreationRequest = req.body_json().await?;
 
     if body.validate().is_err() {
-        let response = Response::new(StatusCode::UnprocessableEntity);
+        let mut response = Response::new(StatusCode::UnprocessableEntity);
+        response.set_error(body.validate().unwrap_err());
         return Ok(response);
     };
 
@@ -257,7 +259,13 @@ pub async fn finish_account_creation(mut req: tide::Request<()>) -> tide::Result
         body.handle,
     );
 
-    query.execute(&mut *transaction).await?;
+    let result = query.execute(&mut *transaction).await?;
+
+    if result.rows_affected() != 1 {
+        transaction.rollback().await?;
+        let response = Response::new(StatusCode::InternalServerError);
+        return Ok(response);
+    }
 
     // FINALY COMMIT TRANSACTION
 

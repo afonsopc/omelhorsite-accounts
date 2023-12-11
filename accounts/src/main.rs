@@ -5,6 +5,7 @@ use crate::{
     routes::{
         change_email::{begin_email_change, finish_email_change},
         create::{begin_account_creation, finish_account_creation},
+        root,
         session::{change_session_device_type, create_session, delete_session, get_some_sessions},
     },
 };
@@ -12,11 +13,6 @@ use dotenv::dotenv;
 use error::{Error, TokenError};
 use models::SessionToken;
 use sqlx::migrate;
-
-#[tracing::instrument]
-async fn root(_req: tide::Request<()>) -> tide::Result<String> {
-    Ok("Deus quer, o homem sonha, a obra nasce.".to_string())
-}
 
 pub mod config;
 pub mod database;
@@ -139,7 +135,7 @@ async fn main() -> Result<()> {
     log::info!("Creating server...");
     let mut app = tide::new();
     app.with(tide::log::LogMiddleware::new());
-    app.at("/").get(root);
+    app.at("/").get(root::root);
     app.at("/change/email/begin").post(begin_email_change);
     app.at("/change/email/finish").post(finish_email_change);
     app.at("/create/begin").post(begin_account_creation);

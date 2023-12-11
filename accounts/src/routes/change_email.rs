@@ -18,7 +18,8 @@ pub async fn begin_email_change(mut req: tide::Request<()>) -> tide::Result {
     let body: BeginEmailChangeRequest = req.body_json().await?;
 
     if body.validate().is_err() {
-        let response = Response::new(StatusCode::UnprocessableEntity);
+        let mut response = Response::new(StatusCode::UnprocessableEntity);
+        response.set_error(body.validate().unwrap_err());
         return Ok(response);
     };
 
@@ -30,15 +31,16 @@ pub async fn begin_email_change(mut req: tide::Request<()>) -> tide::Result {
 
     let session_token = match get_decode_verify_and_return_session_token(&req).await {
         Ok(session_token) => session_token,
-        _ => {
-            let response = Response::new(StatusCode::Unauthorized);
+        Err(err) => {
+            let mut response = Response::new(StatusCode::Unauthorized);
+            response.set_error(err);
             return Ok(response);
         }
     };
 
     let session = session_token.session;
 
-    // GET SESSION AND ACCOUNT IDs FROM TOKEN
+    // GET ACCOUNT ID FROM TOKEN
 
     let account_id = session.account_id;
 
@@ -62,6 +64,8 @@ pub async fn begin_email_change(mut req: tide::Request<()>) -> tide::Result {
 
     let original_email_verification_code = get_random_numbers(CONFIG.verification_code_length);
     let new_email_verification_code = get_random_numbers(CONFIG.verification_code_length);
+
+    // GET TIMESTAMP
 
     let timestamp = chrono::Utc::now().naive_utc();
 
@@ -159,7 +163,8 @@ pub async fn finish_email_change(mut req: tide::Request<()>) -> tide::Result {
     let body: FinishEmailChangeRequest = req.body_json().await?;
 
     if body.validate().is_err() {
-        let response = Response::new(StatusCode::UnprocessableEntity);
+        let mut response = Response::new(StatusCode::UnprocessableEntity);
+        response.set_error(body.validate().unwrap_err());
         return Ok(response);
     };
 
@@ -171,15 +176,16 @@ pub async fn finish_email_change(mut req: tide::Request<()>) -> tide::Result {
 
     let session_token = match get_decode_verify_and_return_session_token(&req).await {
         Ok(session_token) => session_token,
-        _ => {
-            let response = Response::new(StatusCode::Unauthorized);
+        Err(err) => {
+            let mut response = Response::new(StatusCode::Unauthorized);
+            response.set_error(err);
             return Ok(response);
         }
     };
 
     let session = session_token.session;
 
-    // GET SESSION AND ACCOUNT IDs FROM TOKEN
+    // GET ACCOUNT ID FROM TOKEN
 
     let account_id = session.account_id;
 

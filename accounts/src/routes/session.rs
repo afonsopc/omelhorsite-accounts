@@ -1,17 +1,16 @@
-use std::str::FromStr;
-
 use crate::{
     config::CONFIG,
     database::DATABASE_POOL,
-    encryption, get_token_from_request,
+    encryption, get_decode_verify_and_return_session_token,
     models::{
         ChangeSessionDeviceTypeRequest, CreateSessionRequest, DeviceType, GetSessionsResponse,
         Session, SessionToken, Token,
     },
     random::get_random_string,
-    token, verify_and_get_session_token,
+    token,
 };
 use chrono::{Duration, Utc};
+use std::str::FromStr;
 use tide::{convert::json, Response, StatusCode};
 use validator::Validate;
 
@@ -22,7 +21,8 @@ pub async fn create_session(mut req: tide::Request<()>) -> tide::Result {
     let body: CreateSessionRequest = req.body_json().await?;
 
     if body.validate().is_err() {
-        let response = Response::new(StatusCode::UnprocessableEntity);
+        let mut response = Response::new(StatusCode::UnprocessableEntity);
+        response.set_error(body.validate().unwrap_err());
         return Ok(response);
     };
 
@@ -49,6 +49,8 @@ pub async fn create_session(mut req: tide::Request<()>) -> tide::Result {
         }
     };
 
+    let account_id = result.id;
+
     // CHECK IF GIVEN PASSWORD EQUAL TO ENCRYPTED PASSWORD
 
     let password_is_correct =
@@ -72,20 +74,25 @@ pub async fn create_session(mut req: tide::Request<()>) -> tide::Result {
             VALUES ($1, $2, $3, $4, $5, $6)
         "#,
         session_id,
-        result.id,
+        account_id,
         body.device,
         device_type.to_string(),
         expire_date,
         created_at
     );
 
-    query.execute(&mut *transaction).await?;
+    let result = query.execute(&mut *transaction).await?;
+
+    if result.rows_affected() != 1 {
+        let response = Response::new(StatusCode::InternalServerError);
+        return Ok(response);
+    }
 
     // CREATE TOKEN
 
     let session = Session {
         id: session_id,
-        account_id: result.id,
+        account_id,
         device: body.device,
         device_type,
         expire_date,
@@ -109,31 +116,22 @@ pub async fn create_session(mut req: tide::Request<()>) -> tide::Result {
 }
 
 pub async fn delete_session(req: tide::Request<()>) -> tide::Result {
-    // GET TOKEN FROM HEADER
+    // BEGIN DATABASE TRANSACTION
 
-    let token = match get_token_from_request(&req) {
-        Ok(token) => token,
-        _ => {
-            let response = Response::new(StatusCode::Unauthorized);
-            return Ok(response);
-        }
-    };
+    let mut transaction = DATABASE_POOL.begin().await?;
 
-    // DECODE AND VERIFY TOKEN
+    // GET DECODE AND VERIFY TOKEN
 
-    let session_token = match verify_and_get_session_token(&token).await {
+    let session_token = match get_decode_verify_and_return_session_token(&req).await {
         Ok(session_token) => session_token,
-        _ => {
-            let response = Response::new(StatusCode::Unauthorized);
+        Err(err) => {
+            let mut response = Response::new(StatusCode::Unauthorized);
+            response.set_error(err);
             return Ok(response);
         }
     };
 
     let session = session_token.session;
-
-    // BEGIN DATABASE TRANSACTION
-
-    let mut transaction = DATABASE_POOL.begin().await?;
 
     // GET SESSION AND ACCOUNT IDs FROM TOKEN
 
@@ -151,7 +149,12 @@ pub async fn delete_session(req: tide::Request<()>) -> tide::Result {
         account_id
     );
 
-    query.execute(&mut *transaction).await?;
+    let result = query.execute(&mut *transaction).await?;
+
+    if result.rows_affected() != 1 {
+        let response = Response::new(StatusCode::InternalServerError);
+        return Ok(response);
+    }
 
     // COMMIT CHANGES IN DATABASE
 
@@ -179,31 +182,22 @@ pub async fn get_some_sessions(req: tide::Request<()>) -> tide::Result {
         }
     };
 
-    // GET TOKEN FROM HEADER
+    // BEGIN DATABASE TRANSACTION
 
-    let token = match get_token_from_request(&req) {
-        Ok(token) => token,
-        _ => {
-            let response = Response::new(StatusCode::Unauthorized);
-            return Ok(response);
-        }
-    };
+    let mut transaction = DATABASE_POOL.begin().await?;
 
-    // DECODE AND VERIFY TOKEN
+    // GET DECODE AND VERIFY TOKEN
 
-    let session_token = match verify_and_get_session_token(&token).await {
+    let session_token = match get_decode_verify_and_return_session_token(&req).await {
         Ok(session_token) => session_token,
-        _ => {
-            let response = Response::new(StatusCode::Unauthorized);
+        Err(err) => {
+            let mut response = Response::new(StatusCode::Unauthorized);
+            response.set_error(err);
             return Ok(response);
         }
     };
 
     let session = session_token.session;
-
-    // BEGIN DATABASE TRANSACTION
-
-    let mut transaction = DATABASE_POOL.begin().await?;
 
     // GET SESSION AND ACCOUNT IDs FROM TOKEN
 
@@ -260,7 +254,8 @@ pub async fn change_session_device_type(mut req: tide::Request<()>) -> tide::Res
     let body: ChangeSessionDeviceTypeRequest = req.body_json().await?;
 
     if body.validate().is_err() {
-        let response = Response::new(StatusCode::UnprocessableEntity);
+        let mut response = Response::new(StatusCode::UnprocessableEntity);
+        response.set_error(body.validate().unwrap_err());
         return Ok(response);
     };
 
@@ -268,22 +263,13 @@ pub async fn change_session_device_type(mut req: tide::Request<()>) -> tide::Res
 
     let mut transaction = DATABASE_POOL.begin().await?;
 
-    // GET TOKEN FROM HEADER
+    // GET DECODE AND VERIFY TOKEN
 
-    let token = match get_token_from_request(&req) {
-        Ok(token) => token,
-        _ => {
-            let response = Response::new(StatusCode::Unauthorized);
-            return Ok(response);
-        }
-    };
-
-    // DECODE AND VERIFY TOKEN
-
-    let session_token = match verify_and_get_session_token(&token).await {
+    let session_token = match get_decode_verify_and_return_session_token(&req).await {
         Ok(session_token) => session_token,
-        _ => {
-            let response = Response::new(StatusCode::Unauthorized);
+        Err(err) => {
+            let mut response = Response::new(StatusCode::Unauthorized);
+            response.set_error(err);
             return Ok(response);
         }
     };
@@ -308,7 +294,12 @@ pub async fn change_session_device_type(mut req: tide::Request<()>) -> tide::Res
         account_id
     );
 
-    query.execute(&mut *transaction).await?;
+    let result = query.execute(&mut *transaction).await?;
+
+    if result.rows_affected() != 1 {
+        let response = Response::new(StatusCode::InternalServerError);
+        return Ok(response);
+    }
 
     // COMMIT CHANGES IN DATABASE
 
