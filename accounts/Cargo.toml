@@ -9,10 +9,13 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.75"
 async-std = { version = "1.12.0", features = ["attributes"] }
+base64 = "0.21.5"
+bcrypt = "0.15.0"
 chrono = "0.4.31"
 dotenv = "0.15.0"
 envconfig = "0.10.0"
 femme = "2.2.1"
+jsonwebtoken = "9.2.0"
 lazy_static = "1.4.0"
 lettre = "0.11.2"
 log = "0.4.20"
@@ -29,5 +32,4 @@ strum_macros = "0.25.3"
 thiserror = "1.0.50"
 tide = "0.16.0"
 tracing = "0.1.40"
-uuid = { version = "1.5.0", features = ["v4", "serde"] }
 validator = { version = "0.16.1", features = ["derive"] }

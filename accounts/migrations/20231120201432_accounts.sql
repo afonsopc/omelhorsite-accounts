@@ -23,9 +23,8 @@ CREATE TABLE accounts (
     -- Email Change Verfication --
     ------------------------------
     "original_email_verification_code" TEXT,
-    "original_email_verification_code_created_at" TIMESTAMP,
     "new_email_verification_code" TEXT,
-    "new_email_verification_code_created_at" TIMESTAMP,
+    "email_verification_codes_created_at" TIMESTAMP,
     ---------------------------------
     -- Passord Change Verification --
     ---------------------------------

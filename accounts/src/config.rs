@@ -24,6 +24,21 @@ pub struct Config {
     #[envconfig(from = "VERIFICATION_CODE_LENGTH")]
     pub verification_code_length: usize,
 
+    #[envconfig(from = "ENCRYPTION_PROCESSING_COST")]
+    pub encryption_processing_cost: u32,
+
+    #[envconfig(from = "TOKEN_SECRET_KEY")]
+    pub token_secret_key: String,
+
+    #[envconfig(from = "SESSION_ID_LENGTH")]
+    pub session_id_length: usize,
+
+    #[envconfig(from = "ACCOUNT_ID_LENGTH")]
+    pub account_id_length: usize,
+
+    #[envconfig(from = "DEVICE_NAME_MAX_LENGTH")]
+    pub device_name_max_length: usize,
+
     #[envconfig(from = "MANAGER_EMAIL_ADDRESS")]
     pub manager_email_address: String,
 
@@ -71,6 +86,24 @@ pub struct Config {
 
     #[envconfig(from = "ACCOUNT_CREATION_VERIFICATION_EMAIL_BODY")]
     pub account_creation_verification_email_body: String,
+
+    #[envconfig(from = "ACCOUNT_EMAIL_CHANGE_ORIGINAL_EMAIL_VERIFICATION_HTML")]
+    pub account_email_change_original_email_verification_html: bool,
+
+    #[envconfig(from = "ACCOUNT_EMAIL_CHANGE_ORIGINAL_EMAIL_VERIFICATION_SUBJECT")]
+    pub account_email_change_original_email_verification_subject: String,
+
+    #[envconfig(from = "ACCOUNT_EMAIL_CHANGE_ORIGINAL_EMAIL_VERIFICATION_BODY")]
+    pub account_email_change_original_email_verification_body: String,
+
+    #[envconfig(from = "ACCOUNT_EMAIL_CHANGE_NEW_EMAIL_VERIFICATION_HTML")]
+    pub account_email_change_new_email_verification_html: bool,
+
+    #[envconfig(from = "ACCOUNT_EMAIL_CHANGE_NEW_EMAIL_VERIFICATION_SUBJECT")]
+    pub account_email_change_new_email_verification_subject: String,
+
+    #[envconfig(from = "ACCOUNT_EMAIL_CHANGE_NEW_EMAIL_VERIFICATION_BODY")]
+    pub account_email_change_new_email_verification_body: String,
 }
 
 lazy_static! {

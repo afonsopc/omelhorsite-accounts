@@ -1,54 +1,77 @@
 use crate::config::CONFIG;
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
-use strum_macros::Display;
-use uuid::Uuid;
+use strum_macros::{Display, EnumString};
 use validator::{Validate, ValidationError};
 
+#[derive(Debug, Serialize, Deserialize, Display, EnumString)]
+#[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+pub enum DeviceType {
+    Tablet,
+    Console,
+    Fridge,
+    Teapot,
+    Toaster,
+    AirConditioner,
+    Car,
+    Blender,
+    VacuumCleaner,
+    WashingMachine,
+    LawnMower,
+    Microwave,
+    HairDryer,
+    ElectricToothbrush,
+    Desktop,
+    Laptop,
+    Television,
+    Mobile,
+    SpaceShip,
+    TimeMachine,
+    Hoverboard,
+    Teleporter,
+    MagicCarpet,
+    Unicorn,
+    FlyingBroom,
+    Submarine,
+    HotAirBalloon,
+    Keychain,
+    AlarmClock,
+    Radio,
+    RecordPlayer,
+    Other,
+}
+
 #[derive(Debug, Serialize, Deserialize, Display)]
+#[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum Group {
-    #[serde(rename = "administrator")]
-    #[strum(serialize = "administrator")]
     Administrator,
-
-    #[serde(rename = "moderator")]
-    #[strum(serialize = "moderator")]
     Moderator,
-
-    #[serde(rename = "default")]
-    #[strum(serialize = "default")]
     Default,
 }
 
 #[derive(Debug, Serialize, Deserialize, Display)]
+#[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum Gender {
-    #[serde(rename = "male")]
-    #[strum(serialize = "male")]
     Male,
-    #[serde(rename = "female")]
-    #[strum(serialize = "female")]
     Female,
-    #[serde(rename = "not_specified")]
-    #[strum(serialize = "not_specified")]
     NotSpecified,
 }
 
 #[derive(Debug, Serialize, Deserialize, Display)]
+#[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum Theme {
-    #[serde(rename = "dark")]
-    #[strum(serialize = "dark")]
     Dark,
-    #[serde(rename = "light")]
-    #[strum(serialize = "light")]
     Light,
-    #[serde(rename = "automatic")]
-    #[strum(serialize = "automatic")]
     Automatic,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Account {
-    pub id: Uuid,
+    pub id: String,
     pub picture_id: String,
     pub handle: String,
     pub name: String,
@@ -60,16 +83,15 @@ pub struct Account {
     pub language: String,
     pub created_at: NaiveDateTime,
     pub original_email_verification_code: Option<String>,
-    pub original_email_verification_code_created_at: Option<NaiveDateTime>,
     pub new_email_verification_code: Option<String>,
-    pub new_email_verification_code_created_at: Option<NaiveDateTime>,
+    pub email_verification_codes_created_at: Option<NaiveDateTime>,
     pub new_password_verification_code: Option<String>,
     pub new_password_verification_code_created_at: Option<NaiveDateTime>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountSafe {
-    pub id: Uuid,
+    pub id: String,
     pub picture_id: String,
     pub handle: String,
     pub name: String,
@@ -80,6 +102,32 @@ pub struct AccountSafe {
     pub theme: Theme,
     pub language: String,
     pub created_at: NaiveDateTime,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Session {
+    pub id: String,
+    pub account_id: String,
+    pub device: String,
+    pub device_type: DeviceType,
+    pub expire_date: NaiveDateTime,
+    pub created_at: NaiveDateTime,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SessionToken {
+    pub session: Session,
+    pub exp: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ConflictString {
+    pub conflict: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Token {
+    pub token: String,
 }
 
 // Region: Account Creation
@@ -94,7 +142,7 @@ pub struct AccountCreationVerification {
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct BeginAccountCreationRequest {
-    #[validate(length(min = 1), custom = "validate_handle_lenght")]
+    #[validate(length(min = 1), custom = "validate_handle_length")]
     pub handle: String,
     #[validate(email)]
     pub email: String,
@@ -102,11 +150,11 @@ pub struct BeginAccountCreationRequest {
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct FinishAccountCreationRequest {
-    #[validate(custom = "validate_verification_code_lenght")]
+    #[validate(custom = "validate_verification_code_length")]
     pub verification_code: String,
-    #[validate(length(min = 1), custom = "validate_handle_lenght")]
+    #[validate(length(min = 1), custom = "validate_handle_length")]
     pub handle: String,
-    #[validate(length(min = 1), custom = "validate_name_lenght")]
+    #[validate(length(min = 1), custom = "validate_name_length")]
     pub name: String,
     #[validate(email)]
     pub email: String,
@@ -118,7 +166,7 @@ pub struct FinishAccountCreationRequest {
     pub language: String,
 }
 
-fn validate_verification_code_lenght(handle: &str) -> Result<(), ValidationError> {
+fn validate_verification_code_length(handle: &str) -> Result<(), ValidationError> {
     if handle.len() != CONFIG.verification_code_length {
         return Err(ValidationError::new("verification_code_length_wrong"));
     }
@@ -126,7 +174,7 @@ fn validate_verification_code_lenght(handle: &str) -> Result<(), ValidationError
     Ok(())
 }
 
-fn validate_handle_lenght(handle: &str) -> Result<(), ValidationError> {
+fn validate_handle_length(handle: &str) -> Result<(), ValidationError> {
     if handle.len() > CONFIG.handle_max_length {
         return Err(ValidationError::new("handle_length_exceeded"));
     }
@@ -134,7 +182,7 @@ fn validate_handle_lenght(handle: &str) -> Result<(), ValidationError> {
     Ok(())
 }
 
-fn validate_name_lenght(name: &str) -> Result<(), ValidationError> {
+fn validate_name_length(name: &str) -> Result<(), ValidationError> {
     if name.len() > CONFIG.name_max_length {
         return Err(ValidationError::new("name_length_exceeded"));
     }
@@ -142,9 +190,79 @@ fn validate_name_lenght(name: &str) -> Result<(), ValidationError> {
     Ok(())
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ConflictString {
-    pub conflict: String,
+// End region: Create Account Request Model
+
+// Region: Sessions Request Models
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct CreateSessionRequest {
+    #[validate(email)]
+    pub email: String,
+    #[validate(length(min = 1))]
+    pub password: String,
+    #[validate(length(min = 1), custom = "validate_device_max_length")]
+    pub device: String,
 }
 
-// End region: Create Account Request Model
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct DeleteSessionRequest {
+    #[validate(custom = "validate_session_id_length")]
+    pub session_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct ChangeSessionDeviceTypeRequest {
+    #[validate(custom = "validate_session_id_length")]
+    pub session_id: String,
+    pub device_type: DeviceType,
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct GetSessionsRequest {
+    #[validate(custom = "validate_session_id_length")]
+    pub session_id: String,
+    pub ammount: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetSessionsResponse {
+    pub sessions: Vec<Session>,
+}
+
+fn validate_session_id_length(session_id: &str) -> Result<(), ValidationError> {
+    if session_id.len() != CONFIG.session_id_length {
+        return Err(ValidationError::new("session_id_length_exceeded"));
+    }
+
+    Ok(())
+}
+
+fn validate_device_max_length(device: &str) -> Result<(), ValidationError> {
+    if device.len() > CONFIG.device_name_max_length {
+        return Err(ValidationError::new("device_name_length_exceeded"));
+    }
+
+    Ok(())
+}
+
+// End region: Sessions Request Models
+
+// Region: Email Change Request Model
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct BeginEmailChangeRequest {
+    #[validate(email)]
+    pub email: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct FinishEmailChangeRequest {
+    #[validate(email)]
+    pub email: String,
+    #[validate(custom = "validate_verification_code_length")]
+    pub original_email_verification_code: String,
+    #[validate(custom = "validate_verification_code_length")]
+    pub new_email_verification_code: String,
+}
+
+// End region: Email Change Request Model

@@ -2,9 +2,15 @@ use crate::{
     config::CONFIG,
     database::DATABASE_POOL,
     prelude::*,
-    routes::create::{begin_account_creation, finish_account_creation},
+    routes::{
+        change_email::{begin_email_change, finish_email_change},
+        create::{begin_account_creation, finish_account_creation},
+        session::{change_session_device_type, create_session, delete_session, get_some_sessions},
+    },
 };
 use dotenv::dotenv;
+use error::{Error, TokenError};
+use models::SessionToken;
 use sqlx::migrate;
 
 #[tracing::instrument]
@@ -15,11 +21,92 @@ async fn root(_req: tide::Request<()>) -> tide::Result<String> {
 pub mod config;
 pub mod database;
 pub mod email;
+pub mod encryption;
 pub mod error;
 pub mod models;
 pub mod prelude;
 pub mod random;
 pub mod routes;
+pub mod token;
+
+pub fn get_token_from_request(req: &tide::Request<()>) -> Result<String> {
+    let authorization_header = req.header("Authorization").ok_or_else(|| {
+        Error::Token(TokenError::MissingAuthorizationHeader(
+            "Authorization".to_string(),
+        ))
+    })?;
+
+    let authorization_header = authorization_header.as_str();
+
+    let token = authorization_header
+        .strip_prefix("Bearer ")
+        .ok_or_else(|| {
+            Error::Token(TokenError::MissingAuthorizationHeader(
+                "Bearer ".to_string(),
+            ))
+        })?
+        .to_string();
+
+    Ok(token)
+}
+
+pub async fn verify_and_get_session_token(token: &str) -> Result<SessionToken> {
+    // DECODE TOKEN
+
+    let session_token: SessionToken = token::decode_token(token)
+        .map_err(|err| Error::Token(TokenError::DecodeToken(err.to_string())))?;
+
+    let session = &session_token.session;
+
+    // GET SESSION AND ACCOUNT IDs FROM TOKEN
+
+    let session_id = &session.id;
+    let account_id = &session.account_id;
+
+    // GET SESSION FROM SESSIONS TABLE WHERE SESSION ID AND ACCOUNT ID MATCH
+
+    let query = sqlx::query!(
+        r#"
+            SELECT id
+            FROM sessions
+            WHERE id = $1 AND account_id = $2
+        "#,
+        session_id,
+        account_id
+    );
+
+    query
+        .fetch_one(&*DATABASE_POOL)
+        .await
+        .map_err(|_| Error::Token(TokenError::InvalidToken))?;
+
+    Ok(session_token)
+}
+
+pub async fn get_decode_verify_and_return_session_token(
+    req: &tide::Request<()>,
+) -> Result<SessionToken> {
+    // GET TOKEN FROM HEADER
+
+    let token = get_token_from_request(req)?;
+
+    // DECODE AND VERIFY TOKEN
+
+    let session_token = verify_and_get_session_token(&token).await?;
+
+    // RETURN SESSION TOKEN
+
+    Ok(session_token)
+}
+
+pub fn string_to_email_placeholder(string: &str) -> String {
+    f!(
+        "{}{}{}",
+        CONFIG.email_placeholder_marker,
+        string,
+        CONFIG.email_placeholder_marker
+    )
+}
 
 #[async_std::main]
 async fn main() -> Result<()> {
@@ -53,8 +140,14 @@ async fn main() -> Result<()> {
     let mut app = tide::new();
     app.with(tide::log::LogMiddleware::new());
     app.at("/").get(root);
+    app.at("/change/email/begin").post(begin_email_change);
+    app.at("/change/email/finish").post(finish_email_change);
     app.at("/create/begin").post(begin_account_creation);
     app.at("/create/finish").post(finish_account_creation);
+    app.at("/sessions/:ammount").get(get_some_sessions);
+    app.at("/session").patch(change_session_device_type);
+    app.at("/session").post(create_session);
+    app.at("/session").delete(delete_session);
 
     // Run the server
     log::info!("Running server...");

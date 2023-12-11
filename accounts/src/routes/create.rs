@@ -2,16 +2,16 @@ use crate::{
     config::CONFIG,
     database::DATABASE_POOL,
     email::send_email,
+    encryption,
     models::{
         Account, AccountCreationVerification, BeginAccountCreationRequest, ConflictString,
         FinishAccountCreationRequest, Group,
     },
     prelude::*,
-    random,
+    random::{self, get_random_string},
 };
 use chrono::Utc;
 use tide::{convert::json, Response, StatusCode};
-use uuid::Uuid;
 use validator::Validate;
 
 #[tracing::instrument]
@@ -130,22 +130,12 @@ pub async fn begin_account_creation(mut req: tide::Request<()>) -> tide::Result 
 
     // SEND VERIFICATION CODE TO EMAIL
 
-    if let Err(err) = send_email(
+    send_email(
         &body.email,
         &CONFIG.account_creation_verification_email_subject,
         body_with_placeholders_replaced,
         CONFIG.account_creation_verification_email_html,
-    ) {
-        log::error!(
-            "Failed to send verification email to {} with verification code {}. Error: {}",
-            &body.email,
-            &account_creation_verification.verification_code,
-            err
-        );
-        transaction.rollback().await?;
-        let response = Response::new(StatusCode::InternalServerError);
-        return Ok(response);
-    };
+    )?;
 
     // FINALY COMMIT TRANSACTION
 
@@ -193,7 +183,11 @@ pub async fn finish_account_creation(mut req: tide::Request<()>) -> tide::Result
 
     // GENERATE ACCOUNT ID
 
-    let id = Uuid::new_v4();
+    let id = get_random_string(CONFIG.account_id_length);
+
+    // Encrypt password
+
+    let encrypted_password = encryption::encrypt_string(&body.password)?;
 
     // INSERT ACCOUNT QUERY
 
@@ -203,16 +197,15 @@ pub async fn finish_account_creation(mut req: tide::Request<()>) -> tide::Result
         handle: body.handle.to_owned(),
         name: body.name,
         email: body.email.to_owned(),
-        password: body.password,
+        password: encrypted_password,
         group: Group::Default,
         gender: body.gender,
         theme: body.theme,
         language: body.language,
         created_at: Utc::now().naive_utc(),
         original_email_verification_code: None,
-        original_email_verification_code_created_at: None,
         new_email_verification_code: None,
-        new_email_verification_code_created_at: None,
+        email_verification_codes_created_at: None,
         new_password_verification_code: None,
         new_password_verification_code_created_at: None,
     };
