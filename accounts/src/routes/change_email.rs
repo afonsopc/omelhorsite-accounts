@@ -133,7 +133,7 @@ pub async fn begin_email_change(mut req: tide::Request<()>) -> tide::Result {
 
     send_email(
         &email,
-        &CONFIG.account_creation_verification_email_subject,
+        &CONFIG.account_email_change_original_email_verification_subject,
         original_body_with_placeholders_replaced,
         CONFIG.account_email_change_original_email_verification_html,
     )?;
@@ -142,7 +142,7 @@ pub async fn begin_email_change(mut req: tide::Request<()>) -> tide::Result {
 
     send_email(
         &body.email,
-        &CONFIG.account_creation_verification_email_subject,
+        &CONFIG.account_email_change_new_email_verification_subject,
         new_body_with_placeholders_replaced,
         CONFIG.account_email_change_new_email_verification_html,
     )?;
@@ -202,39 +202,21 @@ pub async fn finish_email_change(mut req: tide::Request<()>) -> tide::Result {
         account_id
     );
 
-    let result = match query.fetch_optional(&mut *transaction).await? {
-        Some(result) => result,
-        None => {
-            let response = Response::new(StatusCode::Unauthorized);
-            return Ok(response);
-        }
-    };
+    let result = query.fetch_one(&mut *transaction).await?;
 
     // GET CODES AND TIMESTAMP
 
-    let (
-        original_email_verification_code,
-        new_email_verification_code,
-        email_verification_codes_created_at,
-    ) = match (
-        result.original_email_verification_code,
-        result.new_email_verification_code,
-        result.email_verification_codes_created_at,
-    ) {
-        (
-            Some(original_email_verification_code),
-            Some(new_email_verification_code),
-            Some(email_verification_codes_created_at),
-        ) => (
-            original_email_verification_code,
-            new_email_verification_code,
-            email_verification_codes_created_at,
-        ),
-        _ => {
-            let response = Response::new(StatusCode::Unauthorized);
-            return Ok(response);
-        }
-    };
+    if result.email_verification_codes_created_at.is_none()
+        || result.original_email_verification_code.is_none()
+        || result.new_email_verification_code.is_none()
+    {
+        let response = Response::new(StatusCode::Unauthorized);
+        return Ok(response);
+    }
+
+    let original_email_verification_code = result.original_email_verification_code.unwrap();
+    let new_email_verification_code = result.new_email_verification_code.unwrap();
+    let email_verification_codes_created_at = result.email_verification_codes_created_at.unwrap();
 
     // CHECK IF TIMESTAMP IS EXPIRED
 

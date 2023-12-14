@@ -9,6 +9,7 @@ use crate::{
     },
     prelude::*,
     random::{self, get_random_string},
+    string_to_email_placeholder,
 };
 use chrono::Utc;
 use tide::{convert::json, Response, StatusCode};
@@ -109,15 +110,9 @@ pub async fn begin_account_creation(mut req: tide::Request<()>) -> tide::Result 
     // REPLACE VERIFICATION CODE PLACEHOLDER IN EMAIL BODY
     // WITH THE ACTUAL VERIFICATION CODE
 
-    let verification_code_placeholder = format!(
-        "{}{}{}",
-        CONFIG.email_placeholder_marker, "verification_code", CONFIG.email_placeholder_marker
-    );
+    let verification_code_placeholder = string_to_email_placeholder("verification_code");
+    let handle_placeholder = string_to_email_placeholder("handle");
 
-    let handle_placeholder = format!(
-        "{}{}{}",
-        CONFIG.email_placeholder_marker, "handle", CONFIG.email_placeholder_marker
-    );
     let body_with_placeholders_replaced = &CONFIG
         .account_creation_verification_email_body
         .replace(
