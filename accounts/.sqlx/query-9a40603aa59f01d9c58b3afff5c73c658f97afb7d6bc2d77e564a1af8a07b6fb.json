@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE accounts \n            SET original_email_verification_code = NULL, \n                new_email_verification_code = NULL, \n                email_verification_codes_created_at = NULL\n            WHERE id = $1;\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9a40603aa59f01d9c58b3afff5c73c658f97afb7d6bc2d77e564a1af8a07b6fb"
+}

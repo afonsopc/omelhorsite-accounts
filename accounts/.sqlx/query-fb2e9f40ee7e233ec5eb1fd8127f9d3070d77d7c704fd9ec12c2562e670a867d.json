@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO account_creation_verifications (\n            \"email\",\n            \"handle\",\n            \"verification_code\",\n            \"verification_code_created_at\"\n        )\n        VALUES ($1, $2, $3, $4)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Timestamp"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fb2e9f40ee7e233ec5eb1fd8127f9d3070d77d7c704fd9ec12c2562e670a867d"
+}

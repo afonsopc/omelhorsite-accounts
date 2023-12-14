@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        DELETE FROM account_creation_verifications\n        WHERE email = $1 OR handle = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "33a42314e27e42adfb056f03ac46fd7a9ad84a5542d35f74e9b34c8bd8ff7baa"
+}

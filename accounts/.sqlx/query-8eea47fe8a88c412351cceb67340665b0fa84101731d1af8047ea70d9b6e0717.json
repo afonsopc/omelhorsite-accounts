@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT original_email_verification_code, \n                   new_email_verification_code, \n                   email_verification_codes_created_at\n            FROM accounts \n            WHERE id = $1;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "original_email_verification_code",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "new_email_verification_code",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "email_verification_codes_created_at",
+        "type_info": "Timestamp"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "8eea47fe8a88c412351cceb67340665b0fa84101731d1af8047ea70d9b6e0717"
+}

@@ -20,5 +20,4 @@ accounts/**/*.rs.bk
 accounts/*.pdb
 
 ## Other
-accounts/.sqlx/
 accounts/Cargo.lock

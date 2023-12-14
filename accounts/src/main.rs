@@ -106,9 +106,9 @@ pub fn string_to_email_placeholder(string: &str) -> String {
 
 #[async_std::main]
 async fn main() -> Result<()> {
-    // Start femme
-    println!("Starting femme...");
-    femme::start();
+    // Start logger
+    println!("Starting logger...");
+    tracing_subscriber::fmt::init();
 
     // Load environment from .env file
     log::info!("Loading environment variables...");

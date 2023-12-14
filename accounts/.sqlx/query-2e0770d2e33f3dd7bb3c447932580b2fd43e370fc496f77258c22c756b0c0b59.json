@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT \n            EXISTS(\n                SELECT 1 FROM accounts WHERE email = $1\n            ) AS email_exists,\n            EXISTS(\n                SELECT 1 FROM accounts WHERE handle = $2\n            ) AS handle_exists\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "email_exists",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 1,
+        "name": "handle_exists",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "2e0770d2e33f3dd7bb3c447932580b2fd43e370fc496f77258c22c756b0c0b59"
+}

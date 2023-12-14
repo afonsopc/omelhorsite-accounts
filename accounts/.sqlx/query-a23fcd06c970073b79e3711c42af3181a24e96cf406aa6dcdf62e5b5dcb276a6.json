@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE accounts\n            SET \n                new_password_verification_code = $1, \n                new_password_verification_code_created_at = $2\n            WHERE id = $3;\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Timestamp",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a23fcd06c970073b79e3711c42af3181a24e96cf406aa6dcdf62e5b5dcb276a6"
+}
