@@ -104,6 +104,15 @@ pub struct Config {
 
     #[envconfig(from = "ACCOUNT_EMAIL_CHANGE_NEW_EMAIL_VERIFICATION_BODY")]
     pub account_email_change_new_email_verification_body: String,
+
+    #[envconfig(from = "ACCOUNT_PASSWORD_CHANGE_VERIFICATION_HTML")]
+    pub account_password_change_verification_html: bool,
+
+    #[envconfig(from = "ACCOUNT_PASSWORD_CHANGE_VERIFICATION_SUBJECT")]
+    pub account_password_change_verification_subject: String,
+
+    #[envconfig(from = "ACCOUNT_PASSWORD_CHANGE_VERIFICATION_BODY")]
+    pub account_password_change_verification_body: String,
 }
 
 lazy_static! {

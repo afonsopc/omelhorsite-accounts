@@ -266,3 +266,15 @@ pub struct FinishEmailChangeRequest {
 }
 
 // End region: Email Change Request Model
+
+// Region: Password Change Request Model
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct FinishPasswordChangeRequest {
+    #[validate(custom = "validate_verification_code_length")]
+    pub verification_code: String,
+    #[validate(length(min = 1))]
+    pub password: String,
+}
+
+// End region: Password Change Request Model
