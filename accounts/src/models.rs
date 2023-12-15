@@ -129,6 +129,11 @@ pub struct Token {
     pub token: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SessionList {
+    pub sessions: Vec<Session>,
+}
+
 // Region: Account Creation
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -165,30 +170,6 @@ pub struct FinishAccountCreationRequest {
     pub language: String,
 }
 
-fn validate_verification_code_length(handle: &str) -> Result<(), ValidationError> {
-    if handle.len() != CONFIG.verification_code_length {
-        return Err(ValidationError::new("verification_code_length_wrong"));
-    }
-
-    Ok(())
-}
-
-fn validate_handle_length(handle: &str) -> Result<(), ValidationError> {
-    if handle.len() > CONFIG.handle_max_length {
-        return Err(ValidationError::new("handle_length_exceeded"));
-    }
-
-    Ok(())
-}
-
-fn validate_name_length(name: &str) -> Result<(), ValidationError> {
-    if name.len() > CONFIG.name_max_length {
-        return Err(ValidationError::new("name_length_exceeded"));
-    }
-
-    Ok(())
-}
-
 // End region: Create Account Request Model
 
 // Region: Sessions Request Models
@@ -221,27 +202,6 @@ pub struct GetSessionsRequest {
     #[validate(custom = "validate_session_id_length")]
     pub session_id: String,
     pub ammount: usize,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GetSessionsResponse {
-    pub sessions: Vec<Session>,
-}
-
-fn validate_session_id_length(session_id: &str) -> Result<(), ValidationError> {
-    if session_id.len() != CONFIG.session_id_length {
-        return Err(ValidationError::new("session_id_length_exceeded"));
-    }
-
-    Ok(())
-}
-
-fn validate_device_max_length(device: &str) -> Result<(), ValidationError> {
-    if device.len() > CONFIG.device_name_max_length {
-        return Err(ValidationError::new("device_name_length_exceeded"));
-    }
-
-    Ok(())
 }
 
 // End region: Sessions Request Models
@@ -277,3 +237,59 @@ pub struct FinishPasswordChangeRequest {
 }
 
 // End region: Password Change Request Model
+
+// Region: Account Info Change Request Models
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct AccountInfoChangeRequest {
+    #[validate(length(min = 1), custom = "validate_handle_length")]
+    pub handle: Option<String>,
+    #[validate(length(min = 1), custom = "validate_name_length")]
+    pub name: Option<String>,
+    pub gender: Option<Gender>,
+    pub theme: Option<Theme>,
+    #[validate(length(min = 1))]
+    pub language: Option<String>,
+}
+
+// End region: Account Info Change Request Models
+
+fn validate_session_id_length(session_id: &str) -> Result<(), ValidationError> {
+    if session_id.len() != CONFIG.session_id_length {
+        return Err(ValidationError::new("session_id_length_exceeded"));
+    }
+
+    Ok(())
+}
+
+fn validate_device_max_length(device: &str) -> Result<(), ValidationError> {
+    if device.len() > CONFIG.device_name_max_length {
+        return Err(ValidationError::new("device_name_length_exceeded"));
+    }
+
+    Ok(())
+}
+
+fn validate_verification_code_length(handle: &str) -> Result<(), ValidationError> {
+    if handle.len() != CONFIG.verification_code_length {
+        return Err(ValidationError::new("verification_code_length_wrong"));
+    }
+
+    Ok(())
+}
+
+fn validate_handle_length(handle: &str) -> Result<(), ValidationError> {
+    if handle.len() > CONFIG.handle_max_length {
+        return Err(ValidationError::new("handle_length_exceeded"));
+    }
+
+    Ok(())
+}
+
+fn validate_name_length(name: &str) -> Result<(), ValidationError> {
+    if name.len() > CONFIG.name_max_length {
+        return Err(ValidationError::new("name_length_exceeded"));
+    }
+
+    Ok(())
+}

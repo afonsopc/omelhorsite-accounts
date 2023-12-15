@@ -3,8 +3,8 @@ use crate::{
     database::DATABASE_POOL,
     encryption, get_decode_verify_and_return_session_token,
     models::{
-        ChangeSessionDeviceTypeRequest, CreateSessionRequest, DeviceType, GetSessionsResponse,
-        Session, SessionToken, Token,
+        ChangeSessionDeviceTypeRequest, CreateSessionRequest, DeviceType, Session, SessionList,
+        SessionToken, Token,
     },
     random::get_random_string,
     token,
@@ -233,7 +233,7 @@ pub async fn get_some_sessions(req: tide::Request<()>) -> tide::Result {
 
     // CREATE RESPONSE
 
-    let all_sessions = GetSessionsResponse { sessions: result };
+    let all_sessions = SessionList { sessions: result };
 
     let response = Response::builder(StatusCode::Ok)
         .body(json!(all_sessions))

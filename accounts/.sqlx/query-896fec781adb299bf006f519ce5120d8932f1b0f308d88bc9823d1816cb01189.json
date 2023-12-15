@@ -1,0 +1,112 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT *\n            FROM accounts \n            WHERE id = $1;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "picture_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "handle",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "email",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "password",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "group",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "gender",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "theme",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "language",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 11,
+        "name": "original_email_verification_code",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "new_email_verification_code",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "email_verification_codes_created_at",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 14,
+        "name": "new_password_verification_code",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 15,
+        "name": "new_password_verification_code_created_at",
+        "type_info": "Timestamp"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "896fec781adb299bf006f519ce5120d8932f1b0f308d88bc9823d1816cb01189"
+}
