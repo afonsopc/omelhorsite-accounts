@@ -4,7 +4,9 @@ use crate::{
     prelude::*,
     routes::{
         change_email::{begin_email_change, finish_email_change},
+        change_password::{begin_password_change, finish_password_change},
         create::{begin_account_creation, finish_account_creation},
+        get::get_account,
         root,
         session::{change_session_device_type, create_session, delete_session, get_some_sessions},
     },
@@ -136,8 +138,12 @@ async fn main() -> Result<()> {
     let mut app = tide::new();
     app.with(tide::log::LogMiddleware::new());
     app.at("/").get(root::root);
+    app.at("/get").get(get_account);
     app.at("/change/email/begin").post(begin_email_change);
     app.at("/change/email/finish").post(finish_email_change);
+    app.at("/change/password/begin").post(begin_password_change);
+    app.at("/change/password/finish")
+        .post(finish_password_change);
     app.at("/create/begin").post(begin_account_creation);
     app.at("/create/finish").post(finish_account_creation);
     app.at("/sessions/:ammount").get(get_some_sessions);

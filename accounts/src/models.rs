@@ -42,7 +42,7 @@ pub enum DeviceType {
     Other,
 }
 
-#[derive(Debug, Serialize, Deserialize, Display)]
+#[derive(Debug, Serialize, Deserialize, Display, EnumString)]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum Group {
@@ -51,7 +51,7 @@ pub enum Group {
     Default,
 }
 
-#[derive(Debug, Serialize, Deserialize, Display)]
+#[derive(Debug, Serialize, Deserialize, Display, EnumString)]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum Gender {
@@ -60,7 +60,7 @@ pub enum Gender {
     NotSpecified,
 }
 
-#[derive(Debug, Serialize, Deserialize, Display)]
+#[derive(Debug, Serialize, Deserialize, Display, EnumString)]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum Theme {
@@ -96,7 +96,6 @@ pub struct AccountSafe {
     pub handle: String,
     pub name: String,
     pub email: String,
-    pub password: String,
     pub group: Group,
     pub gender: Gender,
     pub theme: Theme,
