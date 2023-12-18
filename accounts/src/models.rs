@@ -79,6 +79,8 @@ pub struct Account {
     pub password: String,
     pub group: Group,
     pub gender: Gender,
+    pub email_is_public: bool,
+    pub gender_is_public: bool,
     pub theme: Theme,
     pub language: String,
     pub created_at: NaiveDateTime,
@@ -90,17 +92,17 @@ pub struct Account {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AccountSafe {
-    pub id: String,
-    pub picture_id: String,
-    pub handle: String,
-    pub name: String,
-    pub email: String,
-    pub group: Group,
-    pub gender: Gender,
-    pub theme: Theme,
-    pub language: String,
-    pub created_at: NaiveDateTime,
+pub struct AccountPublic {
+    pub id: Option<String>,
+    pub picture_id: Option<String>,
+    pub handle: Option<String>,
+    pub name: Option<String>,
+    pub email: Option<String>,
+    pub group: Option<Group>,
+    pub gender: Option<Gender>,
+    pub theme: Option<Theme>,
+    pub language: Option<String>,
+    pub created_at: Option<NaiveDateTime>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -162,9 +164,11 @@ pub struct FinishAccountCreationRequest {
     pub name: String,
     #[validate(email)]
     pub email: String,
+    pub email_is_public: bool,
     #[validate(length(min = 1))]
     pub password: String,
     pub gender: Gender,
+    pub gender_is_public: bool,
     pub theme: Theme,
     #[validate(length(min = 1))]
     pub language: String,
@@ -238,6 +242,16 @@ pub struct FinishPasswordChangeRequest {
 
 // End region: Password Change Request Model
 
+// Region: Account Deletion Request Model
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct FinishAccountDeletionRequest {
+    #[validate(custom = "validate_verification_code_length")]
+    pub verification_code: String,
+}
+
+// End region: Account Deletion Request Model
+
 // Region: Account Info Change Request Models
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
@@ -253,6 +267,33 @@ pub struct AccountInfoChangeRequest {
 }
 
 // End region: Account Info Change Request Models
+
+// Region: Account Get Request Models
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AccountInfoToGet {
+    pub id: bool,
+    pub picture_id: bool,
+    pub handle: bool,
+    pub name: bool,
+    pub email: bool,
+    pub group: bool,
+    pub gender: bool,
+    pub theme: bool,
+    pub language: bool,
+    pub created_at: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct GetAccountRequest {
+    #[validate(length(min = 1), custom = "validate_account_id_length")]
+    pub id: Option<String>,
+    #[validate(length(min = 1), custom = "validate_handle_length")]
+    pub handle: Option<String>,
+    pub info_to_get: Option<AccountInfoToGet>,
+}
+
+// End region: Account Get Request Models
 
 fn validate_session_id_length(session_id: &str) -> Result<(), ValidationError> {
     if session_id.len() != CONFIG.session_id_length {
@@ -289,6 +330,14 @@ fn validate_handle_length(handle: &str) -> Result<(), ValidationError> {
 fn validate_name_length(name: &str) -> Result<(), ValidationError> {
     if name.len() > CONFIG.name_max_length {
         return Err(ValidationError::new("name_length_exceeded"));
+    }
+
+    Ok(())
+}
+
+fn validate_account_id_length(account_id: &str) -> Result<(), ValidationError> {
+    if account_id.len() != CONFIG.account_id_length {
+        return Err(ValidationError::new("account_id_length_exceeded"));
     }
 
     Ok(())

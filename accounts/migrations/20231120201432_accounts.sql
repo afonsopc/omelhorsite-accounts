@@ -13,6 +13,8 @@ CREATE TABLE accounts (
     -------------------------
     -- Account Preferences --
     -------------------------
+    "email_is_public" BOOLEAN NOT NULL,
+    "gender_is_public" BOOLEAN NOT NULL,
     "theme" TEXT NOT NULL,
     "language" TEXT NOT NULL,
     --------------------------------
@@ -29,5 +31,10 @@ CREATE TABLE accounts (
     -- Passord Change Verification --
     ---------------------------------
     "new_password_verification_code" TEXT,
-    "new_password_verification_code_created_at" TIMESTAMP
+    "new_password_verification_code_created_at" TIMESTAMP,
+    -----------------------------------
+    -- Account Deletion Verification --
+    -----------------------------------
+    "account_deletion_verification_code" TEXT,
+    "account_deletion_verification_code_created_at" TIMESTAMP
 )

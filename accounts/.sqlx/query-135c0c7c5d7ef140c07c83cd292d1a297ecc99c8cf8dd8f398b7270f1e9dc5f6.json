@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT \n                account_deletion_verification_code, \n                account_deletion_verification_code_created_at\n            FROM accounts\n            WHERE id = $1;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "account_deletion_verification_code",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "account_deletion_verification_code_created_at",
+        "type_info": "Timestamp"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "135c0c7c5d7ef140c07c83cd292d1a297ecc99c8cf8dd8f398b7270f1e9dc5f6"
+}

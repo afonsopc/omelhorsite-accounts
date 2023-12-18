@@ -1,57 +1,203 @@
-use std::str::FromStr;
-
 use crate::{
     database::DATABASE_POOL,
     get_decode_verify_and_return_session_token,
-    models::{AccountSafe, Gender, Group, Theme},
+    models::{AccountInfoToGet, AccountPublic, Gender, GetAccountRequest, Group, Theme},
 };
+use std::str::FromStr;
 use tide::{convert::json, Response, StatusCode};
+use validator::Validate;
 
 #[tracing::instrument]
-pub async fn get_account(req: tide::Request<()>) -> tide::Result {
+pub async fn get_account(mut req: tide::Request<()>) -> tide::Result {
+    // GET REQUEST BODY AND VALIDATE IT
+
+    let body: GetAccountRequest = req.body_json().await?;
+
+    if body.validate().is_err() {
+        let mut response = Response::new(StatusCode::UnprocessableEntity);
+        response.set_error(body.validate().unwrap_err());
+        return Ok(response);
+    };
+
     // BEGIN DATABASE TRANSACTION
 
     let mut transaction = DATABASE_POOL.begin().await?;
 
     // GET DECODE AND VERIFY TOKEN
 
-    let session_token = match get_decode_verify_and_return_session_token(&req).await {
-        Ok(session_token) => session_token,
-        Err(err) => {
-            let mut response = Response::new(StatusCode::Unauthorized);
-            response.set_error(err);
+    let (owner_of_account, account_id) = match (
+        get_decode_verify_and_return_session_token(&req).await.ok(),
+        body.id,
+        body.handle,
+    ) {
+        (Some(session_token), Some(id), _) => {
+            let session = session_token.session;
+
+            (session.account_id == id, id)
+        }
+        (Some(session_token), None, Some(handle)) => {
+            let session = session_token.session;
+
+            let query = sqlx::query!(
+                r#"
+                    SELECT id
+                    FROM accounts 
+                    WHERE handle = $1;
+                "#,
+                handle
+            );
+
+            let result = query.fetch_optional(&mut *transaction).await?;
+
+            if result.is_none() {
+                transaction.rollback().await?;
+
+                let response = Response::new(StatusCode::NotFound);
+                return Ok(response);
+            }
+
+            let result = result.unwrap();
+
+            (session.account_id == result.id, result.id)
+        }
+        (None, Some(id), _) => (false, id),
+        (None, None, Some(handle)) => {
+            let query = sqlx::query!(
+                r#"
+                    SELECT id
+                    FROM accounts 
+                    WHERE handle = $1;
+                "#,
+                handle
+            );
+
+            let result = query.fetch_optional(&mut *transaction).await?;
+
+            if result.is_none() {
+                transaction.rollback().await?;
+
+                let response = Response::new(StatusCode::NotFound);
+                return Ok(response);
+            }
+
+            let result = result.unwrap();
+
+            (false, result.id)
+        }
+        _ => {
+            transaction.rollback().await?;
+
+            let response = Response::new(StatusCode::UnprocessableEntity);
             return Ok(response);
         }
     };
 
-    let session = session_token.session;
+    // SEE WHAT INFO TO GET
 
-    // GET ACCOUNT ID FROM TOKEN
+    let info_to_get = match body.info_to_get {
+        Some(info_to_get) => info_to_get,
+        None => AccountInfoToGet {
+            id: true,
+            picture_id: true,
+            handle: true,
+            name: true,
+            email: true,
+            group: true,
+            gender: true,
+            theme: true,
+            language: true,
+            created_at: true,
+        },
+    };
 
-    let account_id = session.account_id;
+    // GET ONLY THE INFO THAT IS SPECIFIED
+    // IN THE info_to_get variable
 
-    // GET ACCOUNT FROM DATABASE
-
-    let account = sqlx::query!(
+    let query = sqlx::query!(
         r#"
-            SELECT *
-            FROM accounts 
-            WHERE id = $1;
-        "#,
-        account_id
+        SELECT
+            CASE WHEN $2 THEN id ELSE NULL END AS id,
+            CASE WHEN $3 THEN picture_id ELSE NULL END AS picture_id,
+            CASE WHEN $4 THEN handle ELSE NULL END AS handle,
+            CASE WHEN $5 THEN name ELSE NULL END AS name,
+            CASE WHEN $6 THEN email ELSE NULL END AS email,
+            CASE WHEN $7 THEN "group" ELSE NULL END AS "group",
+            CASE WHEN $8 THEN gender ELSE NULL END AS gender,
+            CASE WHEN $6 THEN email_is_public ELSE NULL END AS email_is_public,
+            CASE WHEN $8 THEN gender_is_public ELSE NULL END AS gender_is_public,
+            CASE WHEN $9 THEN theme ELSE NULL END AS theme,
+            CASE WHEN $10 THEN language ELSE NULL END AS language,
+            CASE WHEN $11 THEN created_at ELSE NULL END AS created_at
+        FROM accounts
+        WHERE id = $1;
+    "#,
+        account_id,
+        info_to_get.id,
+        info_to_get.picture_id,
+        info_to_get.handle,
+        info_to_get.name,
+        info_to_get.email,
+        info_to_get.group,
+        info_to_get.gender,
+        info_to_get.theme,
+        info_to_get.language,
+        info_to_get.created_at,
     );
 
-    let result = account.fetch_one(&mut *transaction).await?;
+    let result = query.fetch_optional(&mut *transaction).await?;
 
-    let account_safe = AccountSafe {
+    if result.is_none() {
+        transaction.rollback().await?;
+
+        let response = Response::new(StatusCode::NotFound);
+        return Ok(response);
+    }
+
+    let result = result.unwrap();
+
+    // TREAT EACH FIELD THAT NEEDS TREATMENT
+
+    let treated_email = match (result.email, result.email_is_public) {
+        (Some(email), Some(email_is_public)) => {
+            if owner_of_account || email_is_public {
+                Some(email)
+            } else {
+                None
+            }
+        }
+        _ => None,
+    };
+
+    let treated_group = match result.group {
+        Some(group) => Some(Group::from_str(&group)?),
+        None => None,
+    };
+
+    let treated_gender = match (result.gender, result.gender_is_public) {
+        (Some(gender), Some(gender_is_public)) => {
+            if owner_of_account || gender_is_public {
+                Some(Gender::from_str(&gender)?)
+            } else {
+                None
+            }
+        }
+        _ => None,
+    };
+
+    let treated_theme = match result.theme {
+        Some(theme) => Some(Theme::from_str(&theme)?),
+        None => None,
+    };
+
+    let account_info = AccountPublic {
         id: result.id,
         picture_id: result.picture_id,
         handle: result.handle,
         name: result.name,
-        email: result.email,
-        group: Group::from_str(&result.group)?,
-        gender: Gender::from_str(&result.gender)?,
-        theme: Theme::from_str(&result.theme)?,
+        email: treated_email,
+        group: treated_group,
+        gender: treated_gender,
+        theme: treated_theme,
         language: result.language,
         created_at: result.created_at,
     };
@@ -63,7 +209,7 @@ pub async fn get_account(req: tide::Request<()>) -> tide::Result {
     // SEND RESPONSE
 
     let response = Response::builder(StatusCode::Ok)
-        .body(json!(account_safe))
+        .body(json!(account_info))
         .build();
 
     Ok(response)

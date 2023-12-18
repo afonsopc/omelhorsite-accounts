@@ -197,6 +197,8 @@ pub async fn finish_account_creation(mut req: tide::Request<()>) -> tide::Result
         password: encrypted_password,
         group: Group::Default,
         gender: body.gender,
+        email_is_public: body.email_is_public,
+        gender_is_public: body.gender_is_public,
         theme: body.theme,
         language: body.language,
         created_at: Utc::now().naive_utc(),
@@ -220,11 +222,13 @@ pub async fn finish_account_creation(mut req: tide::Request<()>) -> tide::Result
             "password",
             "group",
             "gender",
+            "email_is_public",
+            "gender_is_public",
             "theme",
             "language",
             "created_at"
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         "#,
         account.id.to_string(),
         account.picture_id,
@@ -234,12 +238,20 @@ pub async fn finish_account_creation(mut req: tide::Request<()>) -> tide::Result
         account.password,
         account.group.to_string(),
         account.gender.to_string(),
+        account.email_is_public,
+        account.gender_is_public,
         account.theme.to_string(),
         account.language,
         account.created_at,
     );
 
-    query.execute(&mut *transaction).await?;
+    let result = query.execute(&mut *transaction).await?;
+
+    if result.rows_affected() != 1 {
+        transaction.rollback().await?;
+        let response = Response::new(StatusCode::InternalServerError);
+        return Ok(response);
+    }
 
     // DELETE ALL ROWS FROM account_creation_verifications TABLE
     // WHERE EMAIL OR HANDLE IS EQUAL TO THE ONES
@@ -256,7 +268,7 @@ pub async fn finish_account_creation(mut req: tide::Request<()>) -> tide::Result
 
     let result = query.execute(&mut *transaction).await?;
 
-    if result.rows_affected() != 1 {
+    if result.rows_affected() < 1 {
         transaction.rollback().await?;
         let response = Response::new(StatusCode::InternalServerError);
         return Ok(response);
