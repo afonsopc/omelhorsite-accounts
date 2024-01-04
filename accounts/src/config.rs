@@ -9,12 +9,6 @@ pub struct Config {
     #[envconfig(from = "SERVER_HOST")]
     pub server_host: String,
 
-    #[envconfig(from = "PICTURES_DIRECTORY")]
-    pub pictures_directory: String,
-
-    #[envconfig(from = "DEFAULT_PICTURE")]
-    pub default_picture: String,
-
     #[envconfig(from = "HANDLE_MAX_LENGTH")]
     pub handle_max_length: usize,
 
@@ -38,6 +32,24 @@ pub struct Config {
 
     #[envconfig(from = "DEVICE_NAME_MAX_LENGTH")]
     pub device_name_max_length: usize,
+
+    #[envconfig(from = "DEVICE_DESCRIPTION_MAX_LENGTH")]
+    pub device_description_max_length: usize,
+
+    #[envconfig(from = "PICTURES_DIRECTORY")]
+    pub pictures_directory: String,
+
+    #[envconfig(from = "PICTURE_ID_LENGTH")]
+    pub picture_id_length: usize,
+
+    #[envconfig(from = "PICTURE_WIDTH")]
+    pub picture_width: u32,
+
+    #[envconfig(from = "PICTURE_HEIGHT")]
+    pub picture_height: u32,
+
+    #[envconfig(from = "PICTURE_QUALITY")]
+    pub picture_quality: f32,
 
     #[envconfig(from = "MANAGER_EMAIL_ADDRESS")]
     pub manager_email_address: String,

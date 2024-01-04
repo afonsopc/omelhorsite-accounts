@@ -1,21 +1,21 @@
 use crate::{
     database::DATABASE_POOL,
     get_decode_verify_and_return_session_token,
-    models::{AccountInfoToGet, AccountPublic, Gender, GetAccountRequest, Group, Theme},
+    models::{AccountInfoToGet, AccountPublic, Gender, GetAccountRequest, Group},
 };
 use std::str::FromStr;
 use tide::{convert::json, Response, StatusCode};
 use validator::Validate;
 
 #[tracing::instrument]
-pub async fn get_account(mut req: tide::Request<()>) -> tide::Result {
-    // GET REQUEST BODY AND VALIDATE IT
+pub async fn get_account(req: tide::Request<()>) -> tide::Result {
+    // GET REQUEST INFO FROM QUERY PARAMS AND VALIDATE IT
 
-    let body: GetAccountRequest = req.body_json().await?;
+    let info: GetAccountRequest = req.query()?;
 
-    if body.validate().is_err() {
+    if info.validate().is_err() {
         let mut response = Response::new(StatusCode::UnprocessableEntity);
-        response.set_error(body.validate().unwrap_err());
+        response.set_error(info.validate().unwrap_err());
         return Ok(response);
     };
 
@@ -27,15 +27,15 @@ pub async fn get_account(mut req: tide::Request<()>) -> tide::Result {
 
     let (owner_of_account, account_id) = match (
         get_decode_verify_and_return_session_token(&req).await.ok(),
-        body.id,
-        body.handle,
+        info.id,
+        info.handle,
     ) {
         (Some(session_token), Some(id), _) => {
             let session = session_token.session;
 
             (session.account_id == id, id)
         }
-        (Some(session_token), None, Some(handle)) => {
+        (Some(session_token), _, Some(handle)) => {
             let session = session_token.session;
 
             let query = sqlx::query!(
@@ -60,8 +60,13 @@ pub async fn get_account(mut req: tide::Request<()>) -> tide::Result {
 
             (session.account_id == result.id, result.id)
         }
-        (None, Some(id), _) => (false, id),
-        (None, None, Some(handle)) => {
+        (Some(session_token), _, _) => {
+            let session = session_token.session;
+
+            (true, session.account_id)
+        }
+        (_, Some(id), _) => (false, id),
+        (_, _, Some(handle)) => {
             let query = sqlx::query!(
                 r#"
                     SELECT id
@@ -86,7 +91,6 @@ pub async fn get_account(mut req: tide::Request<()>) -> tide::Result {
         }
         _ => {
             transaction.rollback().await?;
-
             let response = Response::new(StatusCode::UnprocessableEntity);
             return Ok(response);
         }
@@ -94,7 +98,7 @@ pub async fn get_account(mut req: tide::Request<()>) -> tide::Result {
 
     // SEE WHAT INFO TO GET
 
-    let info_to_get = match body.info_to_get {
+    let info_to_get = match info.info_to_get {
         Some(info_to_get) => info_to_get,
         None => AccountInfoToGet {
             id: true,
@@ -102,10 +106,11 @@ pub async fn get_account(mut req: tide::Request<()>) -> tide::Result {
             handle: true,
             name: true,
             email: true,
+            email_is_public: true,
             group: true,
             gender: true,
-            theme: true,
-            language: true,
+            gender_is_public: true,
+            country_code: true,
             created_at: true,
         },
     };
@@ -123,11 +128,10 @@ pub async fn get_account(mut req: tide::Request<()>) -> tide::Result {
             CASE WHEN $6 THEN email ELSE NULL END AS email,
             CASE WHEN $7 THEN "group" ELSE NULL END AS "group",
             CASE WHEN $8 THEN gender ELSE NULL END AS gender,
-            CASE WHEN $6 THEN email_is_public ELSE NULL END AS email_is_public,
-            CASE WHEN $8 THEN gender_is_public ELSE NULL END AS gender_is_public,
-            CASE WHEN $9 THEN theme ELSE NULL END AS theme,
-            CASE WHEN $10 THEN language ELSE NULL END AS language,
-            CASE WHEN $11 THEN created_at ELSE NULL END AS created_at
+            CASE WHEN $9 THEN email_is_public ELSE NULL END AS email_is_public,
+            CASE WHEN $10 THEN gender_is_public ELSE NULL END AS gender_is_public,
+            CASE WHEN $11 THEN country_code ELSE NULL END AS country_code,
+            CASE WHEN $12 THEN created_at ELSE NULL END AS created_at
         FROM accounts
         WHERE id = $1;
     "#,
@@ -139,8 +143,9 @@ pub async fn get_account(mut req: tide::Request<()>) -> tide::Result {
         info_to_get.email,
         info_to_get.group,
         info_to_get.gender,
-        info_to_get.theme,
-        info_to_get.language,
+        info_to_get.email_is_public || info_to_get.gender,
+        info_to_get.gender_is_public || info_to_get.email,
+        info_to_get.country_code,
         info_to_get.created_at,
     );
 
@@ -184,11 +189,6 @@ pub async fn get_account(mut req: tide::Request<()>) -> tide::Result {
         _ => None,
     };
 
-    let treated_theme = match result.theme {
-        Some(theme) => Some(Theme::from_str(&theme)?),
-        None => None,
-    };
-
     let account_info = AccountPublic {
         id: result.id,
         picture_id: result.picture_id,
@@ -197,8 +197,9 @@ pub async fn get_account(mut req: tide::Request<()>) -> tide::Result {
         email: treated_email,
         group: treated_group,
         gender: treated_gender,
-        theme: treated_theme,
-        language: result.language,
+        email_is_public: result.email_is_public,
+        gender_is_public: result.gender_is_public,
+        country_code: result.country_code,
         created_at: result.created_at,
     };
 

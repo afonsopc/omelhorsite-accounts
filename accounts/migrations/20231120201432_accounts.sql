@@ -3,20 +3,19 @@ CREATE TABLE accounts (
     -- Account Information --
     -------------------------
     "id" TEXT NOT NULL PRIMARY KEY,
-    "picture_id" TEXT NOT NULL,
+    "picture_id" TEXT,
     "handle" TEXT NOT NULL CONSTRAINT "handle" UNIQUE,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL CONSTRAINT "email" UNIQUE,
     "password" TEXT NOT NULL,
     "group" TEXT NOT NULL,
     "gender" TEXT NOT NULL,
+    "country_code" TEXT NOT NULL,
     -------------------------
     -- Account Preferences --
     -------------------------
     "email_is_public" BOOLEAN NOT NULL,
     "gender_is_public" BOOLEAN NOT NULL,
-    "theme" TEXT NOT NULL,
-    "language" TEXT NOT NULL,
     --------------------------------
     -- Account Creation timestamp --
     --------------------------------

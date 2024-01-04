@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE accounts\n            SET\n                handle = COALESCE($1, handle),\n                name = COALESCE($2, name),\n                gender = COALESCE($3, gender),\n                country_code = COALESCE($4, country_code)\n            WHERE id = $5\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5a72e3889ad3b20d465a6ad07b86da6deea100003d73d9ae14bb7d0a0ee9bfe1"
+}

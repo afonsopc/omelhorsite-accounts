@@ -60,19 +60,10 @@ pub enum Gender {
     NotSpecified,
 }
 
-#[derive(Debug, Serialize, Deserialize, Display, EnumString)]
-#[strum(serialize_all = "snake_case")]
-#[serde(rename_all = "snake_case")]
-pub enum Theme {
-    Dark,
-    Light,
-    Automatic,
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Account {
     pub id: String,
-    pub picture_id: String,
+    pub picture_id: Option<String>,
     pub handle: String,
     pub name: String,
     pub email: String,
@@ -81,8 +72,7 @@ pub struct Account {
     pub gender: Gender,
     pub email_is_public: bool,
     pub gender_is_public: bool,
-    pub theme: Theme,
-    pub language: String,
+    pub country_code: String,
     pub created_at: NaiveDateTime,
     pub original_email_verification_code: Option<String>,
     pub new_email_verification_code: Option<String>,
@@ -100,8 +90,9 @@ pub struct AccountPublic {
     pub email: Option<String>,
     pub group: Option<Group>,
     pub gender: Option<Gender>,
-    pub theme: Option<Theme>,
-    pub language: Option<String>,
+    pub email_is_public: Option<bool>,
+    pub gender_is_public: Option<bool>,
+    pub country_code: Option<String>,
     pub created_at: Option<NaiveDateTime>,
 }
 
@@ -109,15 +100,24 @@ pub struct AccountPublic {
 pub struct Session {
     pub id: String,
     pub account_id: String,
-    pub device: String,
+    pub device_name: String,
+    pub device_description: String,
     pub device_type: DeviceType,
     pub expire_date: NaiveDateTime,
     pub created_at: NaiveDateTime,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct SessionTokenInfo {
+    pub id: String,
+    pub account_id: String,
+    pub expire_date: NaiveDateTime,
+    pub created_at: NaiveDateTime,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SessionToken {
-    pub session: Session,
+    pub session: SessionTokenInfo,
     pub exp: usize,
 }
 
@@ -169,9 +169,8 @@ pub struct FinishAccountCreationRequest {
     pub password: String,
     pub gender: Gender,
     pub gender_is_public: bool,
-    pub theme: Theme,
     #[validate(length(min = 1))]
-    pub language: String,
+    pub country_code: String,
 }
 
 // End region: Create Account Request Model
@@ -184,8 +183,10 @@ pub struct CreateSessionRequest {
     pub email: String,
     #[validate(length(min = 1))]
     pub password: String,
-    #[validate(length(min = 1), custom = "validate_device_max_length")]
-    pub device: String,
+    #[validate(length(min = 1), custom = "validate_device_name_max_length")]
+    pub device_name: String,
+    #[validate(length(min = 1), custom = "validate_device_description_max_length")]
+    pub device_description: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
@@ -199,6 +200,22 @@ pub struct ChangeSessionDeviceTypeRequest {
     #[validate(custom = "validate_session_id_length")]
     pub session_id: String,
     pub device_type: DeviceType,
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct ChangeSessionDeviceNameRequest {
+    #[validate(custom = "validate_session_id_length")]
+    pub session_id: String,
+    #[validate(length(min = 1), custom = "validate_device_name_max_length")]
+    pub device_name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct ChangeSessionDeviceDescriptionRequest {
+    #[validate(custom = "validate_session_id_length")]
+    pub session_id: String,
+    #[validate(length(min = 1), custom = "validate_device_description_max_length")]
+    pub device_description: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
@@ -261,9 +278,8 @@ pub struct AccountInfoChangeRequest {
     #[validate(length(min = 1), custom = "validate_name_length")]
     pub name: Option<String>,
     pub gender: Option<Gender>,
-    pub theme: Option<Theme>,
     #[validate(length(min = 1))]
-    pub language: Option<String>,
+    pub country_code: Option<String>,
 }
 
 // End region: Account Info Change Request Models
@@ -277,10 +293,11 @@ pub struct AccountInfoToGet {
     pub handle: bool,
     pub name: bool,
     pub email: bool,
+    pub email_is_public: bool,
     pub group: bool,
     pub gender: bool,
-    pub theme: bool,
-    pub language: bool,
+    pub gender_is_public: bool,
+    pub country_code: bool,
     pub created_at: bool,
 }
 
@@ -295,6 +312,24 @@ pub struct GetAccountRequest {
 
 // End region: Account Get Request Models
 
+// Region: Account Picture Request Models
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct GetPictureRequest {
+    #[validate(custom = "validate_picture_id_length")]
+    pub picture_id: String,
+}
+
+// End region: Account Picture Request Models
+
+fn validate_picture_id_length(picture_id: &str) -> Result<(), ValidationError> {
+    if picture_id.len() != CONFIG.picture_id_length {
+        return Err(ValidationError::new("picture_id_length_exceeded"));
+    }
+
+    Ok(())
+}
+
 fn validate_session_id_length(session_id: &str) -> Result<(), ValidationError> {
     if session_id.len() != CONFIG.session_id_length {
         return Err(ValidationError::new("session_id_length_exceeded"));
@@ -303,9 +338,17 @@ fn validate_session_id_length(session_id: &str) -> Result<(), ValidationError> {
     Ok(())
 }
 
-fn validate_device_max_length(device: &str) -> Result<(), ValidationError> {
-    if device.len() > CONFIG.device_name_max_length {
+fn validate_device_name_max_length(device_name: &str) -> Result<(), ValidationError> {
+    if device_name.len() > CONFIG.device_name_max_length {
         return Err(ValidationError::new("device_name_length_exceeded"));
+    }
+
+    Ok(())
+}
+
+fn validate_device_description_max_length(device_description: &str) -> Result<(), ValidationError> {
+    if device_description.len() > CONFIG.device_description_max_length {
+        return Err(ValidationError::new("device_description_length_exceeded"));
     }
 
     Ok(())

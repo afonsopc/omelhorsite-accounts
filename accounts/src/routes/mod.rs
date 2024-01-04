@@ -4,5 +4,6 @@ pub mod change_password;
 pub mod create;
 pub mod delete;
 pub mod get;
+pub mod picture;
 pub mod root;
 pub mod session;

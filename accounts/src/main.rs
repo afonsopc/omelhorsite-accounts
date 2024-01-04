@@ -8,8 +8,12 @@ use crate::{
         change_password::{begin_password_change, finish_password_change},
         create::{begin_account_creation, finish_account_creation},
         get::get_account,
+        picture::{get_picture, upload_picture},
         root,
-        session::{change_session_device_type, create_session, delete_session, get_some_sessions},
+        session::{
+            change_session_device_name, change_session_device_type, create_session, delete_session,
+            get_some_sessions, verify_session,
+        },
     },
 };
 use dotenv::dotenv;
@@ -111,7 +115,7 @@ pub fn string_to_email_placeholder(string: &str) -> String {
 async fn main() -> Result<()> {
     // Start logger
     println!("Starting logger...");
-    tracing_subscriber::fmt::init();
+    femme::start();
 
     // Load environment from .env file
     log::info!("Loading environment variables...");
@@ -139,7 +143,7 @@ async fn main() -> Result<()> {
     let mut app = tide::new();
     app.with(tide::log::LogMiddleware::new());
     app.at("/").get(root::root);
-    app.at("/get").get(get_account);
+    app.at("/account").get(get_account);
     app.at("/change").post(info_change);
     app.at("/change/email/begin").post(begin_email_change);
     app.at("/change/email/finish").post(finish_email_change);
@@ -149,9 +153,15 @@ async fn main() -> Result<()> {
     app.at("/create/begin").post(begin_account_creation);
     app.at("/create/finish").post(finish_account_creation);
     app.at("/sessions/:ammount").get(get_some_sessions);
-    app.at("/session").patch(change_session_device_type);
+    app.at("/session/device/type")
+        .patch(change_session_device_type);
+    app.at("/session/device/name")
+        .patch(change_session_device_name);
     app.at("/session").post(create_session);
     app.at("/session").delete(delete_session);
+    app.at("/session/verify").get(verify_session);
+    app.at("/picture/:picture_id").get(get_picture);
+    app.at("/picture").post(upload_picture);
 
     // Run the server
     log::info!("Running server...");

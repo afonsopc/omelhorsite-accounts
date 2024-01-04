@@ -13,6 +13,7 @@ services:
     ports:
       - 3001:3001
     command: "postgres -c log_statement=all -p 3001"
+
   accounts:
     container_name: accounts
     build:
@@ -25,5 +26,7 @@ services:
       - "DATABASE_URL=postgres://user:password@accounts-database:3001/user"
     env_file:
       - "./.env"
+    volumes:
+      - "./pictures:/pictures:rw"
     ports:
       - 3000:3000

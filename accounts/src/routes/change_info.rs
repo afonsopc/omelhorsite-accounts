@@ -47,15 +47,13 @@ pub async fn info_change(mut req: tide::Request<()>) -> tide::Result {
                 handle = COALESCE($1, handle),
                 name = COALESCE($2, name),
                 gender = COALESCE($3, gender),
-                theme = COALESCE($4, theme),
-                language = COALESCE($5, language)
-            WHERE id = $6
+                country_code = COALESCE($4, country_code)
+            WHERE id = $5
         "#,
         body.handle,
         body.name,
         body.gender.map(|gender| gender.to_string()),
-        body.theme.map(|theme| theme.to_string()),
-        body.language,
+        body.country_code,
         account_id
     );
 

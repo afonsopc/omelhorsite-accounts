@@ -3,8 +3,8 @@ use crate::{
     database::DATABASE_POOL,
     encryption, get_decode_verify_and_return_session_token,
     models::{
-        ChangeSessionDeviceTypeRequest, CreateSessionRequest, DeviceType, Session, SessionList,
-        SessionToken, Token,
+        ChangeSessionDeviceNameRequest, ChangeSessionDeviceTypeRequest, CreateSessionRequest,
+        DeviceType, Session, SessionList, SessionToken, SessionTokenInfo, Token,
     },
     random::get_random_string,
     token,
@@ -70,12 +70,13 @@ pub async fn create_session(mut req: tide::Request<()>) -> tide::Result {
 
     let query = sqlx::query!(
         r#"
-            INSERT INTO sessions (id, account_id, device, device_type, expire_date, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO sessions (id, account_id, device_name, device_description, device_type, expire_date, created_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
         "#,
         session_id,
         account_id,
-        body.device,
+        body.device_name,
+        body.device_description,
         device_type.to_string(),
         expire_date,
         created_at
@@ -90,11 +91,9 @@ pub async fn create_session(mut req: tide::Request<()>) -> tide::Result {
 
     // CREATE TOKEN
 
-    let session = Session {
+    let session = SessionTokenInfo {
         id: session_id,
         account_id,
-        device: body.device,
-        device_type,
         expire_date,
         created_at,
     };
@@ -208,7 +207,7 @@ pub async fn get_some_sessions(req: tide::Request<()>) -> tide::Result {
 
     let query = sqlx::query!(
         r#"
-            SELECT id, device, device_type, expire_date, created_at
+            SELECT *
             FROM sessions
             WHERE account_id = $1
             LIMIT $2
@@ -224,7 +223,8 @@ pub async fn get_some_sessions(req: tide::Request<()>) -> tide::Result {
         .map(|session| Session {
             id: session_id.to_owned(),
             account_id: account_id.to_owned(),
-            device: session.device,
+            device_name: session.device_name,
+            device_description: session.device_description,
             device_type: DeviceType::from_str(&session.device_type).unwrap_or(DeviceType::Other),
             expire_date: session.expire_date,
             created_at: session.created_at,
@@ -308,4 +308,80 @@ pub async fn change_session_device_type(mut req: tide::Request<()>) -> tide::Res
     // SEND OK RESPONSE
 
     Ok(Response::new(StatusCode::Ok))
+}
+
+pub async fn change_session_device_name(mut req: tide::Request<()>) -> tide::Result {
+    // GET REQUEST BODY AND VALIDATE IT
+
+    let body: ChangeSessionDeviceNameRequest = req.body_json().await?;
+
+    if body.validate().is_err() {
+        let mut response = Response::new(StatusCode::UnprocessableEntity);
+        response.set_error(body.validate().unwrap_err());
+        return Ok(response);
+    };
+
+    // BEGIN DATABASE TRANSACTION
+
+    let mut transaction = DATABASE_POOL.begin().await?;
+
+    // GET DECODE AND VERIFY TOKEN
+
+    let session_token = match get_decode_verify_and_return_session_token(&req).await {
+        Ok(session_token) => session_token,
+        Err(err) => {
+            let mut response = Response::new(StatusCode::Unauthorized);
+            response.set_error(err);
+            return Ok(response);
+        }
+    };
+
+    let session = session_token.session;
+
+    // GET SESSION AND ACCOUNT IDs FROM TOKEN
+
+    let session_id = session.id;
+    let account_id = session.account_id;
+
+    // UPDATE SESSION IN SESSIONS TABLE WHERE SESSION ID AND ACCOUNT ID MATCH
+
+    let query = sqlx::query!(
+        r#"
+            UPDATE sessions
+            SET device_name = $1
+            WHERE id = $2 AND account_id = $3
+        "#,
+        body.device_name,
+        session_id,
+        account_id
+    );
+
+    let result = query.execute(&mut *transaction).await?;
+
+    if result.rows_affected() != 1 {
+        let response = Response::new(StatusCode::InternalServerError);
+        return Ok(response);
+    }
+
+    // COMMIT CHANGES IN DATABASE
+
+    transaction.commit().await?;
+
+    // SEND OK RESPONSE
+
+    Ok(Response::new(StatusCode::Ok))
+}
+
+#[tracing::instrument]
+pub async fn verify_session(req: tide::Request<()>) -> tide::Result {
+    // GET, DECODE AND VERIFY TOKEN
+    // IF IT IS VALID, RETURN OK ELSE UNAUTHORIZED
+    match get_decode_verify_and_return_session_token(&req).await {
+        Ok(_) => Ok(Response::new(StatusCode::Ok)),
+        Err(err) => {
+            let mut response = Response::new(StatusCode::Unauthorized);
+            response.set_error(err);
+            Ok(response)
+        }
+    }
 }

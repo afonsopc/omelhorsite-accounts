@@ -8,7 +8,7 @@ use crate::{
         FinishAccountCreationRequest, Group,
     },
     prelude::*,
-    random::{self, get_random_string},
+    random::{get_random_numbers, get_random_string},
     string_to_email_placeholder,
 };
 use chrono::Utc;
@@ -78,7 +78,7 @@ pub async fn begin_account_creation(mut req: tide::Request<()>) -> tide::Result 
 
     // GENERATE VERIFICATION CODE
 
-    let verification_code = random::get_random_numbers(CONFIG.verification_code_length);
+    let verification_code = get_random_numbers(CONFIG.verification_code_length);
 
     // INSERT ACCOUNT CREATION VERIFICATION QUERY
 
@@ -190,7 +190,7 @@ pub async fn finish_account_creation(mut req: tide::Request<()>) -> tide::Result
 
     let account = Account {
         id,
-        picture_id: CONFIG.default_picture.to_owned(),
+        picture_id: None,
         handle: body.handle.to_owned(),
         name: body.name,
         email: body.email.to_owned(),
@@ -199,8 +199,7 @@ pub async fn finish_account_creation(mut req: tide::Request<()>) -> tide::Result
         gender: body.gender,
         email_is_public: body.email_is_public,
         gender_is_public: body.gender_is_public,
-        theme: body.theme,
-        language: body.language,
+        country_code: body.country_code,
         created_at: Utc::now().naive_utc(),
         original_email_verification_code: None,
         new_email_verification_code: None,
@@ -224,11 +223,10 @@ pub async fn finish_account_creation(mut req: tide::Request<()>) -> tide::Result
             "gender",
             "email_is_public",
             "gender_is_public",
-            "theme",
-            "language",
+            "country_code",
             "created_at"
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         "#,
         account.id.to_string(),
         account.picture_id,
@@ -240,8 +238,7 @@ pub async fn finish_account_creation(mut req: tide::Request<()>) -> tide::Result
         account.gender.to_string(),
         account.email_is_public,
         account.gender_is_public,
-        account.theme.to_string(),
-        account.language,
+        account.country_code,
         account.created_at,
     );
 

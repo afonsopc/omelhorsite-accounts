@@ -21,3 +21,4 @@ accounts/*.pdb
 
 ## Other
 accounts/Cargo.lock
+Db.session.sql
