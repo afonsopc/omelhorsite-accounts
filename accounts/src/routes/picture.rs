@@ -1,7 +1,10 @@
+use std::path::Path;
+
 use crate::{
     config::CONFIG, database::DATABASE_POOL, get_decode_verify_and_return_session_token,
     prelude::*, random::get_random_string,
 };
+use image::ImageError;
 use tide::{Response, StatusCode};
 
 #[tracing::instrument]
@@ -45,7 +48,19 @@ pub async fn upload_picture(mut req: tide::Request<()>) -> tide::Result {
 
     let bytes: Vec<u8> = req.body_bytes().await?;
 
-    let mut img = image::load_from_memory(&bytes)?;
+    let mut img = match image::load_from_memory(&bytes) {
+        Ok(img) => img,
+        Err(ImageError::Unsupported(err)) => {
+            let mut response = Response::new(StatusCode::UnsupportedMediaType);
+            response.set_error(err);
+            return Ok(response);
+        }
+        Err(err) => {
+            let mut response = Response::new(StatusCode::InternalServerError);
+            response.set_error(err);
+            return Ok(response);
+        }
+    };
 
     // RESIZE IMAGE
     img = img.resize_exact(
@@ -102,7 +117,13 @@ pub async fn upload_picture(mut req: tide::Request<()>) -> tide::Result {
     if let Some(previous_picture_id) = previous_picture_id {
         let previous_image_file_path =
             f!("{}/{}.webp", CONFIG.pictures_directory, previous_picture_id);
-        std::fs::remove_file(previous_image_file_path)?;
+        let result = std::fs::remove_file(previous_image_file_path);
+        if result.is_err() {
+            log::error!(
+                "Failed to delete previous picture with id: {}",
+                previous_picture_id
+            );
+        }
     }
 
     // COMMIT DATABASE TRANSACTION
@@ -155,6 +176,15 @@ pub async fn get_picture(req: tide::Request<()>) -> tide::Result {
     // GET PICTURE BY ID
 
     let picture_file_path = f!("{}/{}.webp", CONFIG.pictures_directory, picture_id);
+
+    match Path::new(&picture_file_path).is_file() {
+        true => (),
+        false => {
+            transaction.rollback().await?;
+            let response = Response::new(StatusCode::NotFound);
+            return Ok(response);
+        }
+    }
 
     let picture_bytes = std::fs::read(picture_file_path)?;
 
