@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT *\n            FROM sessions\n            WHERE account_id = $1\n            LIMIT $2\n        ",
+  "query": "\n            SELECT *\n            FROM sessions\n            WHERE account_id = $1\n            ORDER BY id\n            OFFSET $2\n            LIMIT $3\n        ",
   "describe": {
     "columns": [
       {
@@ -42,6 +42,7 @@
     "parameters": {
       "Left": [
         "Text",
+        "Int8",
         "Int8"
       ]
     },
@@ -55,5 +56,5 @@
       false
     ]
   },
-  "hash": "3ecb5545730165fd9db1dafc296adf280b61da05b4550a4f28cde2ad7656cb0f"
+  "hash": "a110478cf4fd8f4e18a940f3c3c4d4dfb5400316b83e476079c3d4cc4e5c5967"
 }

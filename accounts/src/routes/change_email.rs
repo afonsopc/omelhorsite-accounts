@@ -11,7 +11,6 @@ use crate::{
 use tide::{Response, StatusCode};
 use validator::Validate;
 
-#[tracing::instrument]
 pub async fn begin_email_change(mut req: tide::Request<()>) -> tide::Result {
     // GET REQUEST BODY AND VALIDATE IT
 
@@ -156,7 +155,6 @@ pub async fn begin_email_change(mut req: tide::Request<()>) -> tide::Result {
     Ok(Response::new(StatusCode::Ok))
 }
 
-#[tracing::instrument]
 pub async fn finish_email_change(mut req: tide::Request<()>) -> tide::Result {
     // GET REQUEST BODY AND VALIDATE IT
 

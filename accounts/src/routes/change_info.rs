@@ -5,7 +5,6 @@ use crate::{
 use tide::{Response, StatusCode};
 use validator::Validate;
 
-#[tracing::instrument]
 pub async fn info_change(mut req: tide::Request<()>) -> tide::Result {
     // GET REQUEST BODY AND VALIDATE IT
 

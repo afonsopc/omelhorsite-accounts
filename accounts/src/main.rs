@@ -7,6 +7,7 @@ use crate::{
         change_info::info_change,
         change_password::{begin_password_change, finish_password_change},
         create::{begin_account_creation, finish_account_creation},
+        delete::{begin_account_deletion, finish_account_deletion},
         get::get_account,
         picture::{get_picture, upload_picture},
         root,
@@ -20,6 +21,10 @@ use dotenv::dotenv;
 use error::{Error, TokenError};
 use models::SessionToken;
 use sqlx::migrate;
+use tide::{
+    http::headers::HeaderValue,
+    security::{CorsMiddleware, Origin},
+};
 
 pub mod config;
 pub mod database;
@@ -138,13 +143,25 @@ async fn main() -> Result<()> {
     log::info!("Running migrations...");
     migrate!("./migrations").run(&*DATABASE_POOL).await.unwrap();
 
+    let cors = CorsMiddleware::new()
+        .allow_methods(
+            "GET, POST, OPTIONS, DELETE, PATCH"
+                .parse::<HeaderValue>()
+                .unwrap(),
+        )
+        .allow_origin(Origin::from("*"))
+        .allow_credentials(false);
+
     // Create the server
     log::info!("Creating server...");
     let mut app = tide::new();
     app.with(tide::log::LogMiddleware::new());
+    app.with(cors);
     app.at("/").get(root::root);
     app.at("/account").get(get_account);
-    app.at("/change").post(info_change);
+    app.at("/delete/begin").post(begin_account_deletion);
+    app.at("/delete/finish").post(finish_account_deletion);
+    app.at("/change").patch(info_change);
     app.at("/change/email/begin").post(begin_email_change);
     app.at("/change/email/finish").post(finish_email_change);
     app.at("/change/password/begin").post(begin_password_change);
@@ -152,13 +169,14 @@ async fn main() -> Result<()> {
         .post(finish_password_change);
     app.at("/create/begin").post(begin_account_creation);
     app.at("/create/finish").post(finish_account_creation);
-    app.at("/sessions/:ammount").get(get_some_sessions);
+    app.at("/sessions/:start/:ammount").get(get_some_sessions);
     app.at("/session/device/type")
         .patch(change_session_device_type);
     app.at("/session/device/name")
         .patch(change_session_device_name);
     app.at("/session").post(create_session);
     app.at("/session").delete(delete_session);
+    app.at("/session/:session_id").delete(delete_session);
     app.at("/session/verify").get(verify_session);
     app.at("/picture/:picture_id").get(get_picture);
     app.at("/picture").post(upload_picture);

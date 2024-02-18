@@ -7,7 +7,6 @@ use crate::{
 use image::ImageError;
 use tide::{Response, StatusCode};
 
-#[tracing::instrument]
 pub async fn upload_picture(mut req: tide::Request<()>) -> tide::Result {
     // GET DECODE AND VERIFY TOKEN
 
@@ -46,7 +45,7 @@ pub async fn upload_picture(mut req: tide::Request<()>) -> tide::Result {
 
     // GET IMAGE BYTES FROM REQUEST BODY
 
-    let bytes: Vec<u8> = req.body_bytes().await?;
+    let bytes = req.body_bytes().await?;
 
     let mut img = match image::load_from_memory(&bytes) {
         Ok(img) => img,
@@ -62,30 +61,59 @@ pub async fn upload_picture(mut req: tide::Request<()>) -> tide::Result {
         }
     };
 
-    // RESIZE IMAGE
-    img = img.resize_exact(
-        CONFIG.picture_width,
-        CONFIG.picture_height,
-        image::imageops::FilterType::Nearest,
-    );
+    // GET THE SMALLER DIMENSION OF THE IMAGE
+    // CHECK IF IT'S BIGGER THAN THE MAXIMUM ALLOWED
+    // IF IT IS, RESIZE THE IMAGE TO THE MAXIMUM ALLOWED
+    // ELSE, AND MAKE BOTH HEIGHT AND WIDTH THAT SIZE
+
+    let smallest_dimention = img.height().min(img.width());
+    let new_size = if smallest_dimention > CONFIG.picture_max_dimention {
+        CONFIG.picture_max_dimention
+    } else {
+        smallest_dimention
+    };
+
+    // RESIZE THE IMAGE
+
+    img = img.resize_exact(new_size, new_size, image::imageops::FilterType::Nearest);
 
     // CONVERT IMAGE TO RGB
 
     let rgb_img = img.to_rgb8();
+
+    // GET IMAGE SIZE IN MEGABYTES
+
+    let img_size = rgb_img.len() as u64 / 1024 / 1024;
+
+    // GENERATE A NEW RANDOM PICTURE ID
+
+    let new_picture_id = get_random_string(CONFIG.picture_id_length);
+
+    // CREATE A CLONE OF THE NEW PICTURE ID
+    // TO PASS TO THE WEBP ENCODER
+
+    let new_picture_id_clone = new_picture_id.clone();
 
     // ENCODE THE IMAGE
 
     let webp_bytes = async_std::task::spawn_blocking(move || {
         let webp_encoder =
             webp::Encoder::new(&rgb_img, webp::PixelLayout::Rgb, img.width(), img.height());
-        let webp_memory = webp_encoder.encode(CONFIG.picture_quality);
+
+        if img_size > CONFIG.picture_max_size_in_megabytes {
+            log::info!(
+                "Compressing image with lossy compression (ID: {})",
+                new_picture_id_clone
+            );
+
+            let webp_memory = webp_encoder.encode(CONFIG.picture_compression);
+            return webp_memory.to_vec();
+        }
+
+        let webp_memory = webp_encoder.encode_lossless();
         webp_memory.to_vec()
     })
     .await;
-
-    // GENERATE A NEW RANDOM PICTURE ID
-
-    let new_picture_id = get_random_string(CONFIG.picture_id_length);
 
     // UPDATE ACCOUNT WITH NEW PICTURE ID
 
@@ -135,7 +163,6 @@ pub async fn upload_picture(mut req: tide::Request<()>) -> tide::Result {
     Ok(Response::new(StatusCode::Ok))
 }
 
-#[tracing::instrument]
 pub async fn get_picture(req: tide::Request<()>) -> tide::Result {
     // GET PICTURE ID FROM URL
 

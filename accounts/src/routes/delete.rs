@@ -7,7 +7,6 @@ use crate::{
     random::get_random_numbers, string_to_email_placeholder,
 };
 
-#[tracing::instrument]
 pub async fn begin_account_deletion(req: tide::Request<()>) -> tide::Result {
     // BEGIN DATABASE TRANSACTION
 
@@ -106,7 +105,6 @@ pub async fn begin_account_deletion(req: tide::Request<()>) -> tide::Result {
     Ok(Response::new(StatusCode::Ok))
 }
 
-#[tracing::instrument]
 pub async fn finish_account_deletion(mut req: tide::Request<()>) -> tide::Result {
     // GET REQUEST BODY AND VALIDATE IT
 

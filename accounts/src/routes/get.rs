@@ -7,7 +7,6 @@ use std::str::FromStr;
 use tide::{convert::json, Response, StatusCode};
 use validator::Validate;
 
-#[tracing::instrument]
 pub async fn get_account(req: tide::Request<()>) -> tide::Result {
     // GET REQUEST INFO FROM QUERY PARAMS AND VALIDATE IT
 
@@ -91,7 +90,7 @@ pub async fn get_account(req: tide::Request<()>) -> tide::Result {
         }
         _ => {
             transaction.rollback().await?;
-            let response = Response::new(StatusCode::UnprocessableEntity);
+            let response = Response::new(StatusCode::NotFound);
             return Ok(response);
         }
     };
@@ -101,22 +100,28 @@ pub async fn get_account(req: tide::Request<()>) -> tide::Result {
     let info_to_get = match info.info_to_get {
         Some(info_to_get) => info_to_get,
         None => AccountInfoToGet {
-            id: true,
-            picture_id: true,
-            handle: true,
-            name: true,
-            email: true,
-            email_is_public: true,
-            group: true,
-            gender: true,
-            gender_is_public: true,
-            country_code: true,
-            created_at: true,
+            id: None,
+            picture_id: None,
+            handle: None,
+            name: None,
+            email: None,
+            email_is_public: None,
+            group: None,
+            gender: None,
+            gender_is_public: None,
+            country_code: None,
+            created_at: None,
         },
     };
 
     // GET ONLY THE INFO THAT IS SPECIFIED
     // IN THE info_to_get variable
+
+    let get_email_is_public =
+        info_to_get.email_is_public.unwrap_or(false) || info_to_get.email.unwrap_or(false);
+
+    let get_gender_is_public =
+        info_to_get.gender_is_public.unwrap_or(false) || info_to_get.gender.unwrap_or(false);
 
     let query = sqlx::query!(
         r#"
@@ -143,8 +148,8 @@ pub async fn get_account(req: tide::Request<()>) -> tide::Result {
         info_to_get.email,
         info_to_get.group,
         info_to_get.gender,
-        info_to_get.email_is_public || info_to_get.gender,
-        info_to_get.gender_is_public || info_to_get.email,
+        get_email_is_public,
+        get_gender_is_public,
         info_to_get.country_code,
         info_to_get.created_at,
     );

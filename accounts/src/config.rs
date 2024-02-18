@@ -42,14 +42,14 @@ pub struct Config {
     #[envconfig(from = "PICTURE_ID_LENGTH")]
     pub picture_id_length: usize,
 
-    #[envconfig(from = "PICTURE_WIDTH")]
-    pub picture_width: u32,
+    #[envconfig(from = "PICTURE_MAX_DIMENTION")]
+    pub picture_max_dimention: u32,
 
-    #[envconfig(from = "PICTURE_HEIGHT")]
-    pub picture_height: u32,
+    #[envconfig(from = "PICTURE_COMPRESSION")]
+    pub picture_compression: f32,
 
-    #[envconfig(from = "PICTURE_QUALITY")]
-    pub picture_quality: f32,
+    #[envconfig(from = "PICTURE_MAX_SIZE_IN_MEGABYTES")]
+    pub picture_max_size_in_megabytes: u64,
 
     #[envconfig(from = "MANAGER_EMAIL_ADDRESS")]
     pub manager_email_address: String,

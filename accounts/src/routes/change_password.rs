@@ -2,12 +2,11 @@ use tide::{Response, StatusCode};
 use validator::Validate;
 
 use crate::{
-    config::CONFIG, database::DATABASE_POOL, email::send_email,
+    config::CONFIG, database::DATABASE_POOL, email::send_email, encryption,
     get_decode_verify_and_return_session_token, models::FinishPasswordChangeRequest,
     random::get_random_numbers, string_to_email_placeholder,
 };
 
-#[tracing::instrument]
 pub async fn begin_password_change(req: tide::Request<()>) -> tide::Result {
     // BEGIN DATABASE TRANSACTION
 
@@ -106,7 +105,6 @@ pub async fn begin_password_change(req: tide::Request<()>) -> tide::Result {
     Ok(Response::new(StatusCode::Ok))
 }
 
-#[tracing::instrument]
 pub async fn finish_password_change(mut req: tide::Request<()>) -> tide::Result {
     // GET REQUEST BODY AND VALIDATE IT
 
@@ -182,6 +180,10 @@ pub async fn finish_password_change(mut req: tide::Request<()>) -> tide::Result 
         return Ok(response);
     }
 
+    // ENCRYPT PASSWORD
+
+    let encrypted_password = encryption::encrypt_string(&body.password)?;
+
     // UPDATE ACCOUNT PASSWORD
 
     let query = sqlx::query!(
@@ -193,7 +195,7 @@ pub async fn finish_password_change(mut req: tide::Request<()>) -> tide::Result 
                 new_password_verification_code_created_at = NULL
             WHERE id = $2;
         "#,
-        &body.password,
+        &encrypted_password,
         &account_id
     );
 
@@ -202,6 +204,24 @@ pub async fn finish_password_change(mut req: tide::Request<()>) -> tide::Result 
     if result.rows_affected() != 1 {
         transaction.rollback().await?;
         let response = Response::new(StatusCode::NotFound);
+        return Ok(response);
+    }
+
+    // DELETE ALL SESSIONS FOR ACCOUNT
+
+    let query = sqlx::query!(
+        r#"
+            DELETE FROM sessions
+            WHERE account_id = $1;
+        "#,
+        account_id,
+    );
+
+    let result = query.execute(&mut *transaction).await?;
+
+    if result.rows_affected() < 1 {
+        transaction.rollback().await?;
+        let response = Response::new(StatusCode::InternalServerError);
         return Ok(response);
     }
 

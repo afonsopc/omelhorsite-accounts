@@ -15,7 +15,6 @@ use chrono::Utc;
 use tide::{convert::json, Response, StatusCode};
 use validator::Validate;
 
-#[tracing::instrument]
 pub async fn begin_account_creation(mut req: tide::Request<()>) -> tide::Result {
     // GET REQUEST BODY AND VALIDATE IT
 
@@ -139,7 +138,6 @@ pub async fn begin_account_creation(mut req: tide::Request<()>) -> tide::Result 
     Ok(Response::new(StatusCode::Ok))
 }
 
-#[tracing::instrument]
 pub async fn finish_account_creation(mut req: tide::Request<()>) -> tide::Result {
     // GET REQUEST BODY AND VALIDATE IT
 
@@ -175,6 +173,27 @@ pub async fn finish_account_creation(mut req: tide::Request<()>) -> tide::Result
     if let Some(false) = result.exists {
         transaction.rollback().await?;
         let response = Response::new(StatusCode::NotFound);
+        return Ok(response);
+    }
+
+    // DELETE ALL ROWS FROM account_creation_verifications TABLE
+    // WHERE EMAIL OR HANDLE IS EQUAL TO THE ONES
+    // USED IN THE ACCOUNT THAT IS GOING TO BE CREATED
+
+    let query = sqlx::query!(
+        r#"
+        DELETE FROM account_creation_verifications
+        WHERE email = $1 OR handle = $2
+        "#,
+        body.email,
+        body.handle,
+    );
+
+    let result = query.execute(&mut *transaction).await?;
+
+    if result.rows_affected() < 1 {
+        transaction.rollback().await?;
+        let response = Response::new(StatusCode::InternalServerError);
         return Ok(response);
     }
 
@@ -245,27 +264,6 @@ pub async fn finish_account_creation(mut req: tide::Request<()>) -> tide::Result
     let result = query.execute(&mut *transaction).await?;
 
     if result.rows_affected() != 1 {
-        transaction.rollback().await?;
-        let response = Response::new(StatusCode::InternalServerError);
-        return Ok(response);
-    }
-
-    // DELETE ALL ROWS FROM account_creation_verifications TABLE
-    // WHERE EMAIL OR HANDLE IS EQUAL TO THE ONES
-    // USED IN THIS NEWLY CREATED ACCOUNT
-
-    let query = sqlx::query!(
-        r#"
-        DELETE FROM account_creation_verifications
-        WHERE email = $1 OR handle = $2
-        "#,
-        body.email,
-        body.handle,
-    );
-
-    let result = query.execute(&mut *transaction).await?;
-
-    if result.rows_affected() < 1 {
         transaction.rollback().await?;
         let response = Response::new(StatusCode::InternalServerError);
         return Ok(response);

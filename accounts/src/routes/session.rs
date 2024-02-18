@@ -14,7 +14,6 @@ use std::str::FromStr;
 use tide::{convert::json, Response, StatusCode};
 use validator::Validate;
 
-#[tracing::instrument]
 pub async fn create_session(mut req: tide::Request<()>) -> tide::Result {
     // GET REQUEST BODY AND VALIDATE IT
 
@@ -132,10 +131,17 @@ pub async fn delete_session(req: tide::Request<()>) -> tide::Result {
 
     let session = session_token.session;
 
-    // GET SESSION AND ACCOUNT IDs FROM TOKEN
+    // GET ACCOUNT ID FROM TOKEN
 
-    let session_id = session.id;
     let account_id = session.account_id;
+
+    // GET THE SESSION ID TO DELETE, IF PROVIDED IN THE URL, USE THAT
+    // ELSE USE THE SESSION ID FROM THE TOKEN
+
+    let session_id: String = match req.param("session_id") {
+        Ok(start) => start.to_string(),
+        _ => session.id,
+    };
 
     // DELETE SESSION FROM SESSIONS TABLE WHERE SESSION ID AND ACCOUNT ID MATCH
 
@@ -151,7 +157,7 @@ pub async fn delete_session(req: tide::Request<()>) -> tide::Result {
     let result = query.execute(&mut *transaction).await?;
 
     if result.rows_affected() != 1 {
-        let response = Response::new(StatusCode::InternalServerError);
+        let response = Response::new(StatusCode::NotFound);
         return Ok(response);
     }
 
@@ -164,8 +170,25 @@ pub async fn delete_session(req: tide::Request<()>) -> tide::Result {
     Ok(Response::new(StatusCode::Ok))
 }
 
+#[tracing::instrument]
 pub async fn get_some_sessions(req: tide::Request<()>) -> tide::Result {
-    // GET AMMOUNT OF SESSIONS TO GET FROM URL
+    // GET THE STARTING INDEX FOR THE SESSIONS TO GET
+
+    let start_index: i64 = match req.param("start") {
+        Ok(start) => match start.parse() {
+            Ok(start) => start,
+            _ => {
+                let response = Response::new(StatusCode::UnprocessableEntity);
+                return Ok(response);
+            }
+        },
+        _ => {
+            let response = Response::new(StatusCode::UnprocessableEntity);
+            return Ok(response);
+        }
+    };
+
+    // GET THE AMMOUNT OF SESSIONS TO GET
 
     let ammount: i64 = match req.param("ammount") {
         Ok(ammount) => match ammount.parse() {
@@ -200,7 +223,6 @@ pub async fn get_some_sessions(req: tide::Request<()>) -> tide::Result {
 
     // GET SESSION AND ACCOUNT IDs FROM TOKEN
 
-    let session_id = &session.id;
     let account_id = &session.account_id;
 
     // GET SOME SESSIONS FROM SESSIONS TABLE WHERE ACCOUNT ID MATCH
@@ -210,9 +232,12 @@ pub async fn get_some_sessions(req: tide::Request<()>) -> tide::Result {
             SELECT *
             FROM sessions
             WHERE account_id = $1
-            LIMIT $2
+            ORDER BY id
+            OFFSET $2
+            LIMIT $3
         "#,
         account_id,
+        start_index,
         ammount
     );
 
@@ -221,7 +246,7 @@ pub async fn get_some_sessions(req: tide::Request<()>) -> tide::Result {
         .await?
         .into_iter()
         .map(|session| Session {
-            id: session_id.to_owned(),
+            id: session.id,
             account_id: account_id.to_owned(),
             device_name: session.device_name,
             device_description: session.device_description,
@@ -372,7 +397,6 @@ pub async fn change_session_device_name(mut req: tide::Request<()>) -> tide::Res
     Ok(Response::new(StatusCode::Ok))
 }
 
-#[tracing::instrument]
 pub async fn verify_session(req: tide::Request<()>) -> tide::Result {
     // GET, DECODE AND VERIFY TOKEN
     // IF IT IS VALID, RETURN OK ELSE UNAUTHORIZED

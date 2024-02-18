@@ -251,10 +251,10 @@ pub struct FinishEmailChangeRequest {
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct FinishPasswordChangeRequest {
-    #[validate(custom = "validate_verification_code_length")]
-    pub verification_code: String,
     #[validate(length(min = 1))]
     pub password: String,
+    #[validate(custom = "validate_verification_code_length")]
+    pub verification_code: String,
 }
 
 // End region: Password Change Request Model
@@ -288,17 +288,17 @@ pub struct AccountInfoChangeRequest {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountInfoToGet {
-    pub id: bool,
-    pub picture_id: bool,
-    pub handle: bool,
-    pub name: bool,
-    pub email: bool,
-    pub email_is_public: bool,
-    pub group: bool,
-    pub gender: bool,
-    pub gender_is_public: bool,
-    pub country_code: bool,
-    pub created_at: bool,
+    pub id: Option<bool>,
+    pub picture_id: Option<bool>,
+    pub handle: Option<bool>,
+    pub name: Option<bool>,
+    pub email: Option<bool>,
+    pub email_is_public: Option<bool>,
+    pub group: Option<bool>,
+    pub gender: Option<bool>,
+    pub gender_is_public: Option<bool>,
+    pub country_code: Option<bool>,
+    pub created_at: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
