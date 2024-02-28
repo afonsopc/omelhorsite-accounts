@@ -8,13 +8,19 @@ use validator::Validate;
 pub async fn info_change(mut req: tide::Request<()>) -> tide::Result {
     // GET REQUEST BODY AND VALIDATE IT
 
-    let body: AccountInfoChangeRequest = req.body_json().await?;
+    let mut body: AccountInfoChangeRequest = req.body_json().await?;
 
     if body.validate().is_err() {
         let mut response = Response::new(StatusCode::UnprocessableEntity);
         response.set_error(body.validate().unwrap_err());
         return Ok(response);
     };
+
+    body.handle = body.handle.map(|handle| handle.to_lowercase());
+    body.name = body.name.map(|name| name.to_lowercase());
+    body.country_code = body
+        .country_code
+        .map(|country_code| country_code.to_lowercase());
 
     // BEGIN DATABASE TRANSACTION
 

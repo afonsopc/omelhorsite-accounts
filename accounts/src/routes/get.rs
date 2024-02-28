@@ -10,13 +10,15 @@ use validator::Validate;
 pub async fn get_account(req: tide::Request<()>) -> tide::Result {
     // GET REQUEST INFO FROM QUERY PARAMS AND VALIDATE IT
 
-    let info: GetAccountRequest = req.query()?;
+    let mut info: GetAccountRequest = req.query()?;
 
     if info.validate().is_err() {
         let mut response = Response::new(StatusCode::UnprocessableEntity);
         response.set_error(info.validate().unwrap_err());
         return Ok(response);
     };
+
+    info.handle = info.handle.map(|handle| handle.to_lowercase());
 
     // BEGIN DATABASE TRANSACTION
 

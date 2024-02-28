@@ -18,13 +18,15 @@ use validator::Validate;
 pub async fn begin_account_creation(mut req: tide::Request<()>) -> tide::Result {
     // GET REQUEST BODY AND VALIDATE IT
 
-    let body: BeginAccountCreationRequest = req.body_json().await?;
+    let mut body: BeginAccountCreationRequest = req.body_json().await?;
 
     if body.validate().is_err() {
         let mut response = Response::new(StatusCode::UnprocessableEntity);
         response.set_error(body.validate().unwrap_err());
         return Ok(response);
     };
+
+    body.handle = body.handle.to_lowercase();
 
     // BEGIN DATABASE TRANSACTION
 
@@ -141,13 +143,16 @@ pub async fn begin_account_creation(mut req: tide::Request<()>) -> tide::Result 
 pub async fn finish_account_creation(mut req: tide::Request<()>) -> tide::Result {
     // GET REQUEST BODY AND VALIDATE IT
 
-    let body: FinishAccountCreationRequest = req.body_json().await?;
+    let mut body: FinishAccountCreationRequest = req.body_json().await?;
 
     if body.validate().is_err() {
         let mut response = Response::new(StatusCode::UnprocessableEntity);
         response.set_error(body.validate().unwrap_err());
         return Ok(response);
     };
+
+    body.handle = body.handle.to_lowercase();
+    body.country_code = body.country_code.to_lowercase();
 
     // BEGIN DATABASE TRANSACTION
 

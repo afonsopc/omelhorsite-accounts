@@ -1,7 +1,9 @@
 use crate::{
     config::CONFIG,
     database::DATABASE_POOL,
-    encryption, get_decode_verify_and_return_session_token,
+    encryption,
+    geolocation::{get_country_from_ip, UNKNOWN_COUNTRY},
+    get_decode_verify_and_return_session_token,
     models::{
         ChangeSessionDeviceNameRequest, ChangeSessionDeviceTypeRequest, CreateSessionRequest,
         DeviceType, Session, SessionList, SessionToken, SessionTokenInfo, Token,
@@ -60,6 +62,19 @@ pub async fn create_session(mut req: tide::Request<()>) -> tide::Result {
         return Ok(response);
     }
 
+    // GET USERS COUNTRY FROM THE IP ADDRESS
+
+    let ip_address = req
+        .peer_addr()
+        .and_then(|addr| Some(addr.split(':').collect::<Vec<&str>>()[0]));
+
+    // GET USERS COUNTRY FROM THE IP ADDRESS
+
+    let country_code = match ip_address {
+        Some(ip_address) => get_country_from_ip(ip_address).await,
+        None => UNKNOWN_COUNTRY.to_string(),
+    };
+
     // INSERT NEW SESSION INTO SESSIONS TABLE
 
     let session_id = get_random_string(CONFIG.session_id_length);
@@ -69,14 +84,15 @@ pub async fn create_session(mut req: tide::Request<()>) -> tide::Result {
 
     let query = sqlx::query!(
         r#"
-            INSERT INTO sessions (id, account_id, device_name, device_description, device_type, expire_date, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            INSERT INTO sessions (id, account_id, device_name, device_description, device_type, country_code, expire_date, created_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         "#,
         session_id,
         account_id,
         body.device_name,
         body.device_description,
         device_type.to_string(),
+        country_code,
         expire_date,
         created_at
     );
