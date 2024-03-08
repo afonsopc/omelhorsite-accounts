@@ -9,7 +9,7 @@ use crate::{
         create::{begin_account_creation, finish_account_creation},
         delete::{begin_account_deletion, finish_account_deletion},
         get::get_account,
-        picture::{get_picture, upload_picture},
+        picture::upload_picture,
         root,
         session::{
             change_session_device_name, change_session_device_type, create_session, delete_session,
@@ -31,6 +31,7 @@ pub mod database;
 pub mod email;
 pub mod encryption;
 pub mod error;
+pub mod geolocation;
 pub mod models;
 pub mod prelude;
 pub mod random;
@@ -178,8 +179,13 @@ async fn main() -> Result<()> {
     app.at("/session").delete(delete_session);
     app.at("/session/:session_id").delete(delete_session);
     app.at("/session/verify").get(verify_session);
-    app.at("/picture/:picture_id").get(get_picture);
     app.at("/picture").post(upload_picture);
+
+    // Test geolocation service
+    log::info!("Testing geolocation service...");
+    let test_ip = "2.2.2.2";
+    let country = geolocation::get_country_from_ip(test_ip).await;
+    log::info!("Country for {}: {}", test_ip, country);
 
     // Run the server
     log::info!("Running server...");

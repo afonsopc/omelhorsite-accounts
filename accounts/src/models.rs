@@ -63,7 +63,6 @@ pub enum Gender {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Account {
     pub id: String,
-    pub picture_id: Option<String>,
     pub handle: String,
     pub name: String,
     pub email: String,
@@ -84,7 +83,6 @@ pub struct Account {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountPublic {
     pub id: Option<String>,
-    pub picture_id: Option<String>,
     pub handle: Option<String>,
     pub name: Option<String>,
     pub email: Option<String>,
@@ -103,6 +101,7 @@ pub struct Session {
     pub device_name: String,
     pub device_description: String,
     pub device_type: DeviceType,
+    pub country_code: String,
     pub expire_date: NaiveDateTime,
     pub created_at: NaiveDateTime,
 }
@@ -289,7 +288,6 @@ pub struct AccountInfoChangeRequest {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountInfoToGet {
     pub id: Option<bool>,
-    pub picture_id: Option<bool>,
     pub handle: Option<bool>,
     pub name: Option<bool>,
     pub email: Option<bool>,
@@ -311,24 +309,6 @@ pub struct GetAccountRequest {
 }
 
 // End region: Account Get Request Models
-
-// Region: Account Picture Request Models
-
-#[derive(Debug, Serialize, Deserialize, Validate)]
-pub struct GetPictureRequest {
-    #[validate(custom = "validate_picture_id_length")]
-    pub picture_id: String,
-}
-
-// End region: Account Picture Request Models
-
-fn validate_picture_id_length(picture_id: &str) -> Result<(), ValidationError> {
-    if picture_id.len() != CONFIG.picture_id_length {
-        return Err(ValidationError::new("picture_id_length_exceeded"));
-    }
-
-    Ok(())
-}
 
 fn validate_session_id_length(session_id: &str) -> Result<(), ValidationError> {
     if session_id.len() != CONFIG.session_id_length {

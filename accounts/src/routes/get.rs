@@ -10,13 +10,15 @@ use validator::Validate;
 pub async fn get_account(req: tide::Request<()>) -> tide::Result {
     // GET REQUEST INFO FROM QUERY PARAMS AND VALIDATE IT
 
-    let info: GetAccountRequest = req.query()?;
+    let mut info: GetAccountRequest = req.query()?;
 
     if info.validate().is_err() {
         let mut response = Response::new(StatusCode::UnprocessableEntity);
         response.set_error(info.validate().unwrap_err());
         return Ok(response);
     };
+
+    info.handle = info.handle.map(|handle| handle.to_lowercase());
 
     // BEGIN DATABASE TRANSACTION
 
@@ -101,7 +103,6 @@ pub async fn get_account(req: tide::Request<()>) -> tide::Result {
         Some(info_to_get) => info_to_get,
         None => AccountInfoToGet {
             id: None,
-            picture_id: None,
             handle: None,
             name: None,
             email: None,
@@ -127,22 +128,20 @@ pub async fn get_account(req: tide::Request<()>) -> tide::Result {
         r#"
         SELECT
             CASE WHEN $2 THEN id ELSE NULL END AS id,
-            CASE WHEN $3 THEN picture_id ELSE NULL END AS picture_id,
-            CASE WHEN $4 THEN handle ELSE NULL END AS handle,
-            CASE WHEN $5 THEN name ELSE NULL END AS name,
-            CASE WHEN $6 THEN email ELSE NULL END AS email,
-            CASE WHEN $7 THEN "group" ELSE NULL END AS "group",
-            CASE WHEN $8 THEN gender ELSE NULL END AS gender,
-            CASE WHEN $9 THEN email_is_public ELSE NULL END AS email_is_public,
-            CASE WHEN $10 THEN gender_is_public ELSE NULL END AS gender_is_public,
-            CASE WHEN $11 THEN country_code ELSE NULL END AS country_code,
-            CASE WHEN $12 THEN created_at ELSE NULL END AS created_at
+            CASE WHEN $3 THEN handle ELSE NULL END AS handle,
+            CASE WHEN $4 THEN name ELSE NULL END AS name,
+            CASE WHEN $5 THEN email ELSE NULL END AS email,
+            CASE WHEN $6 THEN "group" ELSE NULL END AS "group",
+            CASE WHEN $7 THEN gender ELSE NULL END AS gender,
+            CASE WHEN $8 THEN email_is_public ELSE NULL END AS email_is_public,
+            CASE WHEN $9 THEN gender_is_public ELSE NULL END AS gender_is_public,
+            CASE WHEN $10 THEN country_code ELSE NULL END AS country_code,
+            CASE WHEN $11 THEN created_at ELSE NULL END AS created_at
         FROM accounts
         WHERE id = $1;
     "#,
         account_id,
         info_to_get.id,
-        info_to_get.picture_id,
         info_to_get.handle,
         info_to_get.name,
         info_to_get.email,
@@ -196,7 +195,6 @@ pub async fn get_account(req: tide::Request<()>) -> tide::Result {
 
     let account_info = AccountPublic {
         id: result.id,
-        picture_id: result.picture_id,
         handle: result.handle,
         name: result.name,
         email: treated_email,

@@ -37,6 +37,11 @@
         "ordinal": 6,
         "name": "created_at",
         "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 7,
+        "name": "country_code",
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -47,6 +52,7 @@
       ]
     },
     "nullable": [
+      false,
       false,
       false,
       false,
