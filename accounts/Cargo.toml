@@ -20,6 +20,7 @@ lettre = "0.11.2"
 log = "0.4.20"
 rand = "0.8.5"
 reqwest = { version = "0.11.24", features = ["json"] }
+rust-s3 = "0.33.0"
 serde = { version = "1.0.192", features = ["derive"] }
 serde_json = "1.0.113"
 sqlx = { version = "0.7.2", features = [

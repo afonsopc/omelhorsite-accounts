@@ -66,7 +66,7 @@ pub async fn create_session(mut req: tide::Request<()>) -> tide::Result {
 
     let ip_address = req
         .peer_addr()
-        .and_then(|addr| Some(addr.split(':').collect::<Vec<&str>>()[0]));
+        .map(|addr| addr.split(':').collect::<Vec<&str>>()[0]);
 
     // GET USERS COUNTRY FROM THE IP ADDRESS
 
@@ -267,6 +267,7 @@ pub async fn get_some_sessions(req: tide::Request<()>) -> tide::Result {
             device_name: session.device_name,
             device_description: session.device_description,
             device_type: DeviceType::from_str(&session.device_type).unwrap_or(DeviceType::Other),
+            country_code: session.country_code,
             expire_date: session.expire_date,
             created_at: session.created_at,
         })

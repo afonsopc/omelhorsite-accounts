@@ -1,11 +1,47 @@
-use std::path::Path;
-
-use crate::{
-    config::CONFIG, database::DATABASE_POOL, get_decode_verify_and_return_session_token,
-    prelude::*, random::get_random_string,
-};
+use crate::error::Error;
+use crate::error::S3Error;
+use crate::prelude::*;
+use crate::CONFIG;
+use crate::{database::DATABASE_POOL, get_decode_verify_and_return_session_token};
 use image::ImageError;
+use s3::creds::Credentials;
+use s3::Bucket;
+use s3::Region;
 use tide::{Response, StatusCode};
+
+pub async fn put_webp_picture_in_bucket(picture: Vec<u8>, picture_name: &str) -> Result<()> {
+    // INSTANTIATE BUCKET
+
+    let bucket = Bucket::new(
+        &CONFIG.s3_pictures_bucket,
+        Region::Custom {
+            region: CONFIG.s3_region.to_owned(),
+            endpoint: CONFIG.s3_endpoint.to_owned(),
+        },
+        Credentials {
+            access_key: Some(CONFIG.s3_access_key.to_owned()),
+            secret_key: Some(CONFIG.s3_secret_key.to_owned()),
+            security_token: None,
+            session_token: None,
+            expiration: None,
+        },
+    )
+    .map_err(|err| Error::S3(S3Error::InstantiateBucket(err.to_string())))?
+    .with_path_style();
+
+    // PUT OBJECT IN BUCKET
+
+    let response = bucket
+        .put_object_with_content_type(picture_name, &picture, "image/webp")
+        .await
+        .map_err(|err| Error::S3(S3Error::PutObject(err.to_string())))?;
+
+    if response.status_code() == 404 {
+        return Err(Error::S3(S3Error::BucketNotFound));
+    }
+
+    Ok(())
+}
 
 pub async fn upload_picture(mut req: tide::Request<()>) -> tide::Result {
     // GET DECODE AND VERIFY TOKEN
@@ -29,19 +65,19 @@ pub async fn upload_picture(mut req: tide::Request<()>) -> tide::Result {
 
     let mut transaction = DATABASE_POOL.begin().await?;
 
-    // DELETE PREVIOUS PICTURE
+    // GET USER HANDLE
 
     let query = sqlx::query!(
         r#"
-            SELECT picture_id 
+            SELECT handle 
             FROM accounts 
             WHERE id = $1
         "#,
         account_id
     );
 
-    let result = query.fetch_optional(&mut *transaction).await?;
-    let previous_picture_id = result.and_then(|row| row.picture_id);
+    let result = query.fetch_one(&mut *transaction).await?;
+    let handle = result.handle;
 
     // GET IMAGE BYTES FROM REQUEST BODY
 
@@ -85,27 +121,15 @@ pub async fn upload_picture(mut req: tide::Request<()>) -> tide::Result {
 
     let img_size = rgb_img.len() as u64 / 1024 / 1024;
 
-    // GENERATE A NEW RANDOM PICTURE ID
-
-    let new_picture_id = get_random_string(CONFIG.picture_id_length);
-
-    // CREATE A CLONE OF THE NEW PICTURE ID
-    // TO PASS TO THE WEBP ENCODER
-
-    let new_picture_id_clone = new_picture_id.clone();
-
     // ENCODE THE IMAGE
 
     let webp_bytes = async_std::task::spawn_blocking(move || {
         let webp_encoder =
             webp::Encoder::new(&rgb_img, webp::PixelLayout::Rgb, img.width(), img.height());
 
+        // IF THE IMAGE SIZE IS BIGGER THAN THE MAXIMUM ALLOWED
+        // ENCODE THE IMAGE WITH LOSSY COMPRESSION
         if img_size > CONFIG.picture_max_size_in_megabytes {
-            log::info!(
-                "Compressing image with lossy compression (ID: {})",
-                new_picture_id_clone
-            );
-
             let webp_memory = webp_encoder.encode(CONFIG.picture_compression);
             return webp_memory.to_vec();
         }
@@ -115,113 +139,83 @@ pub async fn upload_picture(mut req: tide::Request<()>) -> tide::Result {
     })
     .await;
 
-    // UPDATE ACCOUNT WITH NEW PICTURE ID
+    // PUT IMAGE IN S3 BUCKET
 
-    let query = sqlx::query!(
-        r#"
-            UPDATE accounts
-            SET picture_id = $1
-            WHERE id = $2
-        "#,
-        new_picture_id,
-        account_id
-    );
+    let picture_name = f!("{}.webp", handle);
 
-    let result = query.execute(&mut *transaction).await?;
-
-    if result.rows_affected() != 1 {
-        transaction.rollback().await?;
-        let response = Response::new(StatusCode::InternalServerError);
-        return Ok(response);
-    }
-
-    // WRITE THE WEBP BYTES TO A FILE
-
-    let new_image_file_path = f!("{}/{}.webp", CONFIG.pictures_directory, new_picture_id);
-    std::fs::write(new_image_file_path, &*webp_bytes)?;
-
-    // DELETE THE PREVIOUS PICTURE IF THERE WAS ONE
-
-    if let Some(previous_picture_id) = previous_picture_id {
-        let previous_image_file_path =
-            f!("{}/{}.webp", CONFIG.pictures_directory, previous_picture_id);
-        let result = std::fs::remove_file(previous_image_file_path);
-        if result.is_err() {
-            log::error!(
-                "Failed to delete previous picture with id: {}",
-                previous_picture_id
-            );
+    match put_webp_picture_in_bucket(webp_bytes, &picture_name).await {
+        Ok(_) => (),
+        Err(err) => {
+            let mut response = Response::new(StatusCode::InternalServerError);
+            response.set_error(err);
+            return Ok(response);
         }
     }
-
-    // COMMIT DATABASE TRANSACTION
-
-    transaction.commit().await?;
 
     // OK RESPONSE
 
     Ok(Response::new(StatusCode::Ok))
 }
 
-pub async fn get_picture(req: tide::Request<()>) -> tide::Result {
-    // GET PICTURE ID FROM URL
+// pub async fn get_picture(req: tide::Request<()>) -> tide::Result {
+//     // GET PICTURE ID FROM URL
 
-    let picture_id: String = match req.param("picture_id") {
-        Ok(picture_id) => picture_id.to_string(),
-        Err(err) => {
-            let mut response = Response::new(StatusCode::UnprocessableEntity);
-            response.set_error(err);
+//     let picture_id: String = match req.param("picture_id") {
+//         Ok(picture_id) => picture_id.to_string(),
+//         Err(err) => {
+//             let mut response = Response::new(StatusCode::UnprocessableEntity);
+//             response.set_error(err);
 
-            return Ok(response);
-        }
-    };
-    // BEGIN DATABASE TRANSACTION
+//             return Ok(response);
+//         }
+//     };
+//     // BEGIN DATABASE TRANSACTION
 
-    let mut transaction = DATABASE_POOL.begin().await?;
+//     let mut transaction = DATABASE_POOL.begin().await?;
 
-    // GET PICTURE BY ID
+//     // GET PICTURE BY ID
 
-    let query = sqlx::query!(
-        r#"
-            SELECT EXISTS(
-                SELECT 1
-                FROM accounts
-                WHERE picture_id = $1
-            ) AS exists
-        "#,
-        picture_id
-    );
+//     let query = sqlx::query!(
+//         r#"
+//             SELECT EXISTS(
+//                 SELECT 1
+//                 FROM accounts
+//                 WHERE picture_id = $1
+//             ) AS exists
+//         "#,
+//         picture_id
+//     );
 
-    let result = query.fetch_one(&mut *transaction).await?;
+//     let result = query.fetch_one(&mut *transaction).await?;
 
-    if let Some(false) = result.exists {
-        transaction.rollback().await?;
-        let response = Response::new(StatusCode::NotFound);
-        return Ok(response);
-    }
+//     if let Some(false) = result.exists {
+//         transaction.rollback().await?;
+//         let response = Response::new(StatusCode::NotFound);
+//         return Ok(response);
+//     }
 
-    // GET PICTURE BY ID
+//     // GET PICTURE BY ID
 
-    let picture_file_path = f!("{}/{}.webp", CONFIG.pictures_directory, picture_id);
+//     let picture_file_path = f!("{}/{}.webp", CONFIG.pictures_directory, picture_id);
 
-    match Path::new(&picture_file_path).is_file() {
-        true => (),
-        false => {
-            transaction.rollback().await?;
-            let response = Response::new(StatusCode::NotFound);
-            return Ok(response);
-        }
-    }
+//     match Path::new(&picture_file_path).is_file() {
+//         true => (),
+//         false => {
+//             transaction.rollback().await?;
+//             let response = Response::new(StatusCode::NotFound);
+//             return Ok(response);
+//         }
+//     }
 
-    let picture_bytes = std::fs::read(picture_file_path)?;
+//     let picture_bytes = std::fs::read(picture_file_path)?;
 
-    // CREATE A RESPONSE WITH THE PICTURE BYTES
-    // AND THE CORRECT CONTENT TYPE
+//     // CREATE A RESPONSE WITH THE PICTURE BYTES
+//     // AND THE CORRECT CONTENT TYPE
 
-    let response = Response::builder(StatusCode::Ok)
-        .body(picture_bytes)
-        .content_type("image/webp")
-        .build();
+//     let response = Response::builder(StatusCode::Ok)
+//         .body(picture_bytes)
+//         .content_type("image/webp")
+//         .build();
 
-    Ok(response)
-}
+//     Ok(response)
+// }

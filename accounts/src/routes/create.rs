@@ -214,7 +214,6 @@ pub async fn finish_account_creation(mut req: tide::Request<()>) -> tide::Result
 
     let account = Account {
         id,
-        picture_id: None,
         handle: body.handle.to_owned(),
         name: body.name,
         email: body.email.to_owned(),
@@ -238,7 +237,6 @@ pub async fn finish_account_creation(mut req: tide::Request<()>) -> tide::Result
         r#"
         INSERT INTO accounts (
             "id",
-            "picture_id",
             "handle",
             "name",
             "email",
@@ -250,10 +248,9 @@ pub async fn finish_account_creation(mut req: tide::Request<()>) -> tide::Result
             "country_code",
             "created_at"
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         "#,
         account.id.to_string(),
-        account.picture_id,
         account.handle,
         account.name,
         account.email,

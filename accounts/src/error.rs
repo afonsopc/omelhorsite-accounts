@@ -39,11 +39,31 @@ pub enum TokenError {
 }
 
 #[derive(Debug, thiserror::Error)]
+pub enum S3Error {
+    #[error("Failed to instantiate S3 bucket")]
+    InstantiateBucket(String),
+
+    #[error("Failed to head object: {0}")]
+    HeadObject(String),
+
+    #[error("Bucket not found")]
+    BucketNotFound,
+
+    #[error("Failed to put object in bucket: {0}")]
+    PutObject(String),
+}
+
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
     Email(EmailError),
+
     #[error(transparent)]
     Encryption(EncryptionError),
+
     #[error(transparent)]
     Token(TokenError),
+
+    #[error(transparent)]
+    S3(S3Error),
 }

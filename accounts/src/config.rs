@@ -36,12 +36,6 @@ pub struct Config {
     #[envconfig(from = "DEVICE_DESCRIPTION_MAX_LENGTH")]
     pub device_description_max_length: usize,
 
-    #[envconfig(from = "PICTURES_DIRECTORY")]
-    pub pictures_directory: String,
-
-    #[envconfig(from = "PICTURE_ID_LENGTH")]
-    pub picture_id_length: usize,
-
     #[envconfig(from = "PICTURE_MAX_DIMENTION")]
     pub picture_max_dimention: u32,
 
@@ -53,6 +47,21 @@ pub struct Config {
 
     #[envconfig(from = "IP_TO_COUNTRY_URL")]
     pub ip_to_country_url: String,
+
+    #[envconfig(from = "S3_ENDPOINT")]
+    pub s3_endpoint: String,
+
+    #[envconfig(from = "S3_ACCESS_KEY")]
+    pub s3_access_key: String,
+
+    #[envconfig(from = "S3_SECRET_KEY")]
+    pub s3_secret_key: String,
+
+    #[envconfig(from = "S3_REGION")]
+    pub s3_region: String,
+
+    #[envconfig(from = "S3_PICTURES_BUCKET")]
+    pub s3_pictures_bucket: String,
 
     #[envconfig(from = "MANAGER_EMAIL_ADDRESS")]
     pub manager_email_address: String,

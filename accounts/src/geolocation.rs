@@ -13,7 +13,10 @@ pub async fn get_country_from_ip(ip: &str) -> String {
     let url = f!("{}/{}", CONFIG.ip_to_country_url, ip);
     let response = match reqwest::get(&url).await {
         Ok(response) => response,
-        Err(_) => return UNKNOWN_COUNTRY.to_string(),
+        Err(_) => {
+            log::error!("IP-TO-COUNTRY service unreachable.");
+            return UNKNOWN_COUNTRY.to_string();
+        }
     };
 
     match response
@@ -22,10 +25,10 @@ pub async fn get_country_from_ip(ip: &str) -> String {
         .map(|response| response.country.to_lowercase())
     {
         Ok(country) => {
-            if response.country == "None" {
+            if country == "none" {
                 return UNKNOWN_COUNTRY.to_string();
             }
-            return country;
+            country
         }
         Err(_) => UNKNOWN_COUNTRY.to_string(),
     }
