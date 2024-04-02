@@ -9,7 +9,7 @@ use crate::{
         change_password::{admin_password_change, begin_password_change, finish_password_change},
         create::{begin_account_creation, finish_account_creation},
         delete::{admin_account_deletion, begin_account_deletion, finish_account_deletion},
-        get::{get_account, get_is_admin},
+        get::{get_account, get_all_accounts, get_is_admin},
         picture::upload_picture,
         root,
         session::{
@@ -208,6 +208,7 @@ async fn main() -> Result<()> {
     app.at("/admin/change/group").patch(admin_group_change);
     app.at("/admin/change/email").patch(admin_email_change);
     app.at("/admin/delete").patch(admin_account_deletion);
+    app.at("/admin/accounts").patch(get_all_accounts);
     app.at("/admin/change/password")
         .patch(admin_password_change);
     app.at("/change/email/begin").post(begin_email_change);

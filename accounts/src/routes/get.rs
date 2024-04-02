@@ -2,10 +2,7 @@ use crate::{
     database::DATABASE_POOL,
     error::{DatabaseError, Error},
     get_decode_verify_and_return_session_token, get_id_from_handle, is_account_admin_from_id,
-    models::{
-        AccountInfoToGet, AccountPublic, AccountsKeyword, AccountsSortBy, Gender,
-        GetAccountRequest, GetSomeAccountsRequest, Group,
-    },
+    models::{AccountInfoToGet, AccountPublic, Gender, GetAccountRequest, Group},
 };
 use std::str::FromStr;
 use tide::{convert::json, Response, StatusCode};
@@ -270,36 +267,7 @@ pub async fn get_account(req: tide::Request<()>) -> tide::Result {
     Ok(response)
 }
 
-pub async fn get_some_accounts(req: tide::Request<()>) -> tide::Result {
-    let body: GetSomeAccountsRequest = req.query()?;
-
-    // GET KEY TO SORT BY
-
-    let sort_by = match body.sort_by {
-        Some(sort_by) => sort_by,
-        None => AccountsSortBy {
-            id: None,
-            handle: None,
-            name: None,
-            email: None,
-            email_is_public: None,
-            group: None,
-            gender: None,
-            gender_is_public: None,
-            country_code: None,
-            created_at: None,
-        },
-    };
-
-    let order_ascending = match body.order_ascending {
-        Some(order_ascending) => order_ascending,
-        None => true,
-    };
-
-    // BEGIN DATABASE TRANSACTION
-
-    let mut transaction = DATABASE_POOL.begin().await?;
-
+pub async fn get_all_accounts(req: tide::Request<()>) -> tide::Result {
     // GET DECODE AND VERIFY TOKEN
 
     let session_token = match get_decode_verify_and_return_session_token(&req).await {
@@ -318,69 +286,57 @@ pub async fn get_some_accounts(req: tide::Request<()>) -> tide::Result {
     let is_admin = match is_account_admin_from_id(&account_id).await {
         Ok(is_admin) => is_admin,
         Err(Error::Database(DatabaseError::RowNotFound)) => {
-            transaction.rollback().await?;
             let response = Response::new(StatusCode::NotFound);
             return Ok(response);
         }
         Err(_) => {
-            transaction.rollback().await?;
             let response = Response::new(StatusCode::InternalServerError);
             return Ok(response);
         }
     };
 
     if !is_admin {
-        transaction.rollback().await?;
         let response = Response::new(StatusCode::Unauthorized);
         return Ok(response);
     }
 
+    // BEGIN DATABASE TRANSACTION
+
+    let mut transaction = DATABASE_POOL.begin().await?;
+
     // GET ACCOUNTS
-
-    let order = if order_ascending { "ASC" } else { "DESC" };
-
-    let keyword = match body.keyword {
-        Some(keyword) => keyword,
-        None => AccountsKeyword {
-            id: None,
-            handle: None,
-            name: None,
-            email: None,
-            group: None,
-            gender: None,
-            email_is_public: None,
-            gender_is_public: None,
-            country_code: None,
-        },
-    };
 
     let query = sqlx::query!(
         r#"
-        SELECT *
-        FROM accounts
-        WHERE LIKE CASE 
-            WHEN $2 THEN id
-            WHEN $3 THEN handle
-            WHEN $4 THEN name
-            WHEN $5 THEN email
-            WHEN $6 THEN "group"
-            WHEN $7 THEN gender
-            WHEN $8 THEN email_is_public
-            WHEN $9 THEN gender_is_public
-            WHEN $10 THEN country_code
-            ELSE created_at
-        END
-        "#,
-        sort_by.id,
-        sort_by.handle,
-        sort_by.name,
-        sort_by.email,
-        sort_by.group,
-        sort_by.gender,
-        sort_by.email_is_public,
-        sort_by.gender_is_public,
-        sort_by.country_code,
+        SELECT * FROM accounts;
+        "#
     );
 
-    Ok(Response::new(StatusCode::Ok))
+    let result = query.fetch_all(&mut *transaction).await?;
+
+    // TREAT EACH FIELD THAT NEEDS TREATMENT
+
+    let accounts = result
+        .iter()
+        .map(|row| AccountPublic {
+            id: Some(row.id.to_string()),
+            handle: Some(row.handle.to_string()),
+            name: Some(row.name.to_string()),
+            email: Some(row.email.to_string()),
+            group: Some(Group::from_str(&row.group).unwrap()),
+            gender: Some(Gender::from_str(&row.gender).unwrap()),
+            email_is_public: Some(row.email_is_public),
+            gender_is_public: Some(row.gender_is_public),
+            country_code: Some(row.country_code.to_string()),
+            created_at: Some(row.created_at),
+        })
+        .collect::<Vec<AccountPublic>>();
+
+    // FINALY COMMIT TRANSACTION
+
+    let response = Response::builder(StatusCode::Ok)
+        .body(json!(accounts))
+        .build();
+
+    Ok(response)
 }
