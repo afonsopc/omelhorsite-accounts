@@ -47,7 +47,6 @@ pub enum DeviceType {
 #[serde(rename_all = "snake_case")]
 pub enum Group {
     Administrator,
-    Moderator,
     Default,
 }
 
@@ -101,7 +100,7 @@ pub struct Session {
     pub device_name: String,
     pub device_description: String,
     pub device_type: DeviceType,
-    pub country_code: String,
+    pub ip_address: String,
     pub expire_date: NaiveDateTime,
     pub created_at: NaiveDateTime,
 }
@@ -229,6 +228,14 @@ pub struct GetSessionsRequest {
 // Region: Email Change Request Model
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct AdminEmailChangeRequest {
+    #[validate(length(min = 1), custom = "validate_account_id_length")]
+    pub account_id: String,
+    #[validate(email)]
+    pub email: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct BeginEmailChangeRequest {
     #[validate(email)]
     pub email: String,
@@ -246,7 +253,26 @@ pub struct FinishEmailChangeRequest {
 
 // End region: Email Change Request Model
 
+// Region: Group Change Request Model
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct AdminGroupChangeRequest {
+    #[validate(length(min = 1), custom = "validate_account_id_length")]
+    pub account_id: String,
+    pub group: Group,
+}
+
+// End region: Group Change Request Model
+
 // Region: Password Change Request Model
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct AdminPasswordChangeRequest {
+    #[validate(length(min = 1), custom = "validate_account_id_length")]
+    pub account_id: String,
+    #[validate(length(min = 1))]
+    pub password: String,
+}
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct FinishPasswordChangeRequest {
@@ -259,6 +285,12 @@ pub struct FinishPasswordChangeRequest {
 // End region: Password Change Request Model
 
 // Region: Account Deletion Request Model
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct AdminAccountDeletionRequest {
+    #[validate(length(min = 1), custom = "validate_account_id_length")]
+    pub account_id: String,
+}
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct FinishAccountDeletionRequest {
@@ -284,6 +316,43 @@ pub struct AccountInfoChangeRequest {
 // End region: Account Info Change Request Models
 
 // Region: Account Get Request Models
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AccountsSortBy {
+    pub id: Option<bool>,
+    pub handle: Option<bool>,
+    pub name: Option<bool>,
+    pub email: Option<bool>,
+    pub email_is_public: Option<bool>,
+    pub group: Option<bool>,
+    pub gender: Option<bool>,
+    pub gender_is_public: Option<bool>,
+    pub country_code: Option<bool>,
+    pub created_at: Option<bool>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AccountsKeyword {
+    pub id: Option<String>,
+    pub handle: Option<String>,
+    pub name: Option<String>,
+    pub email: Option<String>,
+    pub group: Option<Group>,
+    pub gender: Option<Gender>,
+    pub email_is_public: Option<bool>,
+    pub gender_is_public: Option<bool>,
+    pub country_code: Option<String>,
+    pub created_at: Option<NaiveDateTime>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetSomeAccountsRequest {
+    pub starting_index: usize,
+    pub ending_index: usize,
+    pub order_ascending: Option<bool>,
+    pub sort_by: Option<AccountsSortBy>,
+    pub keyword: Option<AccountsKeyword>,
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountInfoToGet {

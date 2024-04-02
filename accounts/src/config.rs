@@ -45,9 +45,6 @@ pub struct Config {
     #[envconfig(from = "PICTURE_MAX_SIZE_IN_MEGABYTES")]
     pub picture_max_size_in_megabytes: u64,
 
-    #[envconfig(from = "IP_TO_COUNTRY_URL")]
-    pub ip_to_country_url: String,
-
     #[envconfig(from = "S3_ENDPOINT")]
     pub s3_endpoint: String,
 

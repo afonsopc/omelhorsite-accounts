@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE accounts \n            SET \"group\" = $1\n            WHERE id = $2;\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6714cde31edd5a8b3c79f07e4f58abc376cb128a4a7e8aad0271fb5a10167704"
+}

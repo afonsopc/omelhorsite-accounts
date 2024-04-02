@@ -3,23 +3,25 @@ use crate::{
     database::DATABASE_POOL,
     prelude::*,
     routes::{
-        change_email::{begin_email_change, finish_email_change},
+        change_email::{admin_email_change, begin_email_change, finish_email_change},
+        change_group::admin_group_change,
         change_info::info_change,
-        change_password::{begin_password_change, finish_password_change},
+        change_password::{admin_password_change, begin_password_change, finish_password_change},
         create::{begin_account_creation, finish_account_creation},
-        delete::{begin_account_deletion, finish_account_deletion},
-        get::get_account,
+        delete::{admin_account_deletion, begin_account_deletion, finish_account_deletion},
+        get::{get_account, get_is_admin},
         picture::upload_picture,
         root,
         session::{
-            change_session_device_name, change_session_device_type, create_session, delete_session,
-            get_some_sessions, verify_session,
+            change_session_device_description, change_session_device_name,
+            change_session_device_type, create_session, delete_session, get_some_sessions,
+            verify_session,
         },
     },
 };
 use dotenv::dotenv;
-use error::{Error, TokenError};
-use models::SessionToken;
+use error::{DatabaseError, Error, TokenError};
+use models::{Group, SessionToken};
 use sqlx::migrate;
 use tide::{
     http::headers::HeaderValue,
@@ -31,12 +33,51 @@ pub mod database;
 pub mod email;
 pub mod encryption;
 pub mod error;
-pub mod geolocation;
 pub mod models;
 pub mod prelude;
 pub mod random;
 pub mod routes;
 pub mod token;
+
+pub async fn is_account_admin_from_id(id: &str) -> Result<bool> {
+    let query = sqlx::query!(
+        r#"
+            SELECT "group"
+            FROM accounts
+            WHERE id = $1;
+        "#,
+        id
+    );
+
+    let result = match query.fetch_one(&*DATABASE_POOL).await {
+        Ok(result) => result,
+        Err(sqlx::Error::RowNotFound) => return Err(Error::Database(DatabaseError::RowNotFound)),
+        Err(error) => return Err(Error::Database(DatabaseError::FetchOne(error.to_string()))),
+    };
+
+    let group = result.group;
+
+    Ok(group == Group::Administrator.to_string())
+}
+
+pub async fn get_id_from_handle(handle: &str) -> Result<String> {
+    let query = sqlx::query!(
+        r#"
+            SELECT id
+            FROM accounts
+            WHERE handle = $1;
+        "#,
+        handle
+    );
+
+    let result = match query.fetch_one(&*DATABASE_POOL).await {
+        Ok(result) => result,
+        Err(sqlx::Error::RowNotFound) => return Err(Error::Database(DatabaseError::RowNotFound)),
+        Err(error) => return Err(Error::Database(DatabaseError::FetchOne(error.to_string()))),
+    };
+
+    Ok(result.id)
+}
 
 pub fn get_token_from_request(req: &tide::Request<()>) -> Result<String> {
     let authorization_header = req.header("Authorization").ok_or_else(|| {
@@ -160,9 +201,15 @@ async fn main() -> Result<()> {
     app.with(cors);
     app.at("/").get(root::root);
     app.at("/account").get(get_account);
+    app.at("/admin").get(get_is_admin);
     app.at("/delete/begin").post(begin_account_deletion);
     app.at("/delete/finish").post(finish_account_deletion);
     app.at("/change").patch(info_change);
+    app.at("/admin/change/group").patch(admin_group_change);
+    app.at("/admin/change/email").patch(admin_email_change);
+    app.at("/admin/delete").patch(admin_account_deletion);
+    app.at("/admin/change/password")
+        .patch(admin_password_change);
     app.at("/change/email/begin").post(begin_email_change);
     app.at("/change/email/finish").post(finish_email_change);
     app.at("/change/password/begin").post(begin_password_change);
@@ -173,6 +220,8 @@ async fn main() -> Result<()> {
     app.at("/sessions/:start/:ammount").get(get_some_sessions);
     app.at("/session/device/type")
         .patch(change_session_device_type);
+    app.at("/session/device/description")
+        .patch(change_session_device_description);
     app.at("/session/device/name")
         .patch(change_session_device_name);
     app.at("/session").post(create_session);
@@ -180,12 +229,6 @@ async fn main() -> Result<()> {
     app.at("/session/:session_id").delete(delete_session);
     app.at("/session/verify").get(verify_session);
     app.at("/picture").post(upload_picture);
-
-    // Test geolocation service
-    log::info!("Testing geolocation service...");
-    let test_ip = "2.2.2.2";
-    let country = geolocation::get_country_from_ip(test_ip).await;
-    log::info!("Country for {}: {}", test_ip, country);
 
     // Run the server
     log::info!("Running server...");

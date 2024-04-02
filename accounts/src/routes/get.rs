@@ -1,11 +1,47 @@
 use crate::{
     database::DATABASE_POOL,
-    get_decode_verify_and_return_session_token,
-    models::{AccountInfoToGet, AccountPublic, Gender, GetAccountRequest, Group},
+    error::{DatabaseError, Error},
+    get_decode_verify_and_return_session_token, get_id_from_handle, is_account_admin_from_id,
+    models::{
+        AccountInfoToGet, AccountPublic, AccountsKeyword, AccountsSortBy, Gender,
+        GetAccountRequest, GetSomeAccountsRequest, Group,
+    },
 };
 use std::str::FromStr;
 use tide::{convert::json, Response, StatusCode};
 use validator::Validate;
+
+pub async fn get_is_admin(req: tide::Request<()>) -> tide::Result {
+    // GET DECODE AND VERIFY TOKEN
+
+    let session_token = match get_decode_verify_and_return_session_token(&req).await {
+        Ok(session_token) => session_token,
+        Err(err) => {
+            let mut response = Response::new(StatusCode::Unauthorized);
+            response.set_error(err);
+            return Ok(response);
+        }
+    };
+
+    let account_id = session_token.session.account_id;
+
+    let is_admin = match is_account_admin_from_id(&account_id).await {
+        Ok(is_admin) => is_admin,
+        Err(Error::Database(DatabaseError::RowNotFound)) => {
+            let response = Response::new(StatusCode::NotFound);
+            return Ok(response);
+        }
+        Err(_) => {
+            let response = Response::new(StatusCode::InternalServerError);
+            return Ok(response);
+        }
+    };
+
+    match is_admin {
+        true => Ok(Response::new(StatusCode::Ok)),
+        false => Ok(Response::new(StatusCode::Unauthorized)),
+    }
+}
 
 pub async fn get_account(req: tide::Request<()>) -> tide::Result {
     // GET REQUEST INFO FROM QUERY PARAMS AND VALIDATE IT
@@ -33,33 +69,54 @@ pub async fn get_account(req: tide::Request<()>) -> tide::Result {
     ) {
         (Some(session_token), Some(id), _) => {
             let session = session_token.session;
+            let is_admin = match is_account_admin_from_id(&id).await {
+                Ok(is_admin) => is_admin,
+                Err(Error::Database(DatabaseError::RowNotFound)) => {
+                    transaction.rollback().await?;
+                    let response = Response::new(StatusCode::NotFound);
+                    return Ok(response);
+                }
+                Err(_) => {
+                    transaction.rollback().await?;
+                    let response = Response::new(StatusCode::InternalServerError);
+                    return Ok(response);
+                }
+            };
 
-            (session.account_id == id, id)
+            ((session.account_id == id || is_admin), id)
         }
         (Some(session_token), _, Some(handle)) => {
             let session = session_token.session;
 
-            let query = sqlx::query!(
-                r#"
-                    SELECT id
-                    FROM accounts 
-                    WHERE handle = $1;
-                "#,
-                handle
-            );
+            let id = match get_id_from_handle(&handle).await {
+                Ok(id) => id,
+                Err(Error::Database(DatabaseError::RowNotFound)) => {
+                    transaction.rollback().await?;
+                    let response = Response::new(StatusCode::NotFound);
+                    return Ok(response);
+                }
+                Err(_) => {
+                    transaction.rollback().await?;
+                    let response = Response::new(StatusCode::InternalServerError);
+                    return Ok(response);
+                }
+            };
 
-            let result = query.fetch_optional(&mut *transaction).await?;
+            let is_admin = match is_account_admin_from_id(&id).await {
+                Ok(is_admin) => is_admin,
+                Err(Error::Database(DatabaseError::RowNotFound)) => {
+                    transaction.rollback().await?;
+                    let response = Response::new(StatusCode::NotFound);
+                    return Ok(response);
+                }
+                Err(_) => {
+                    transaction.rollback().await?;
+                    let response = Response::new(StatusCode::InternalServerError);
+                    return Ok(response);
+                }
+            };
 
-            if result.is_none() {
-                transaction.rollback().await?;
-
-                let response = Response::new(StatusCode::NotFound);
-                return Ok(response);
-            }
-
-            let result = result.unwrap();
-
-            (session.account_id == result.id, result.id)
+            ((session.account_id == id || is_admin), id)
         }
         (Some(session_token), _, _) => {
             let session = session_token.session;
@@ -68,27 +125,21 @@ pub async fn get_account(req: tide::Request<()>) -> tide::Result {
         }
         (_, Some(id), _) => (false, id),
         (_, _, Some(handle)) => {
-            let query = sqlx::query!(
-                r#"
-                    SELECT id
-                    FROM accounts 
-                    WHERE handle = $1;
-                "#,
-                handle
-            );
+            let id = match get_id_from_handle(&handle).await {
+                Ok(id) => id,
+                Err(Error::Database(DatabaseError::RowNotFound)) => {
+                    transaction.rollback().await?;
+                    let response = Response::new(StatusCode::NotFound);
+                    return Ok(response);
+                }
+                Err(_) => {
+                    transaction.rollback().await?;
+                    let response = Response::new(StatusCode::InternalServerError);
+                    return Ok(response);
+                }
+            };
 
-            let result = query.fetch_optional(&mut *transaction).await?;
-
-            if result.is_none() {
-                transaction.rollback().await?;
-
-                let response = Response::new(StatusCode::NotFound);
-                return Ok(response);
-            }
-
-            let result = result.unwrap();
-
-            (false, result.id)
+            (false, id)
         }
         _ => {
             transaction.rollback().await?;
@@ -217,4 +268,119 @@ pub async fn get_account(req: tide::Request<()>) -> tide::Result {
         .build();
 
     Ok(response)
+}
+
+pub async fn get_some_accounts(req: tide::Request<()>) -> tide::Result {
+    let body: GetSomeAccountsRequest = req.query()?;
+
+    // GET KEY TO SORT BY
+
+    let sort_by = match body.sort_by {
+        Some(sort_by) => sort_by,
+        None => AccountsSortBy {
+            id: None,
+            handle: None,
+            name: None,
+            email: None,
+            email_is_public: None,
+            group: None,
+            gender: None,
+            gender_is_public: None,
+            country_code: None,
+            created_at: None,
+        },
+    };
+
+    let order_ascending = match body.order_ascending {
+        Some(order_ascending) => order_ascending,
+        None => true,
+    };
+
+    // BEGIN DATABASE TRANSACTION
+
+    let mut transaction = DATABASE_POOL.begin().await?;
+
+    // GET DECODE AND VERIFY TOKEN
+
+    let session_token = match get_decode_verify_and_return_session_token(&req).await {
+        Ok(session_token) => session_token,
+        Err(err) => {
+            let mut response = Response::new(StatusCode::Unauthorized);
+            response.set_error(err);
+            return Ok(response);
+        }
+    };
+
+    let account_id = session_token.session.account_id;
+
+    // CHECK IF ACCOUNT IS ADMIN
+
+    let is_admin = match is_account_admin_from_id(&account_id).await {
+        Ok(is_admin) => is_admin,
+        Err(Error::Database(DatabaseError::RowNotFound)) => {
+            transaction.rollback().await?;
+            let response = Response::new(StatusCode::NotFound);
+            return Ok(response);
+        }
+        Err(_) => {
+            transaction.rollback().await?;
+            let response = Response::new(StatusCode::InternalServerError);
+            return Ok(response);
+        }
+    };
+
+    if !is_admin {
+        transaction.rollback().await?;
+        let response = Response::new(StatusCode::Unauthorized);
+        return Ok(response);
+    }
+
+    // GET ACCOUNTS
+
+    let order = if order_ascending { "ASC" } else { "DESC" };
+
+    let keyword = match body.keyword {
+        Some(keyword) => keyword,
+        None => AccountsKeyword {
+            id: None,
+            handle: None,
+            name: None,
+            email: None,
+            group: None,
+            gender: None,
+            email_is_public: None,
+            gender_is_public: None,
+            country_code: None,
+        },
+    };
+
+    let query = sqlx::query!(
+        r#"
+        SELECT *
+        FROM accounts
+        WHERE LIKE CASE 
+            WHEN $2 THEN id
+            WHEN $3 THEN handle
+            WHEN $4 THEN name
+            WHEN $5 THEN email
+            WHEN $6 THEN "group"
+            WHEN $7 THEN gender
+            WHEN $8 THEN email_is_public
+            WHEN $9 THEN gender_is_public
+            WHEN $10 THEN country_code
+            ELSE created_at
+        END
+        "#,
+        sort_by.id,
+        sort_by.handle,
+        sort_by.name,
+        sort_by.email,
+        sort_by.group,
+        sort_by.gender,
+        sort_by.email_is_public,
+        sort_by.gender_is_public,
+        sort_by.country_code,
+    );
+
+    Ok(Response::new(StatusCode::Ok))
 }

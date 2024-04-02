@@ -1,4 +1,5 @@
 pub mod change_email;
+pub mod change_group;
 pub mod change_info;
 pub mod change_password;
 pub mod create;

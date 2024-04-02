@@ -1,11 +1,11 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT handle \n            FROM accounts \n            WHERE id = $1\n        ",
+  "query": "\n            SELECT id\n            FROM accounts\n            WHERE handle = $1;\n        ",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "handle",
+        "name": "id",
         "type_info": "Text"
       }
     ],
@@ -18,5 +18,5 @@
       false
     ]
   },
-  "hash": "1321df4e9fac06775ad05eaed7e8c47bc2b50e87c6088fc58bc996ed742470d9"
+  "hash": "f29e88b9bd09a2541c7b31ddde3e7b94602435cda9ce29eb3211901febef99b8"
 }

@@ -1,12 +1,11 @@
 use crate::{
     config::CONFIG,
     database::DATABASE_POOL,
-    encryption,
-    geolocation::{get_country_from_ip, UNKNOWN_COUNTRY},
-    get_decode_verify_and_return_session_token,
+    encryption, get_decode_verify_and_return_session_token, is_account_admin_from_id,
     models::{
-        ChangeSessionDeviceNameRequest, ChangeSessionDeviceTypeRequest, CreateSessionRequest,
-        DeviceType, Session, SessionList, SessionToken, SessionTokenInfo, Token,
+        ChangeSessionDeviceDescriptionRequest, ChangeSessionDeviceNameRequest,
+        ChangeSessionDeviceTypeRequest, CreateSessionRequest, DeviceType, Session, SessionList,
+        SessionToken, SessionTokenInfo, Token,
     },
     random::get_random_string,
     token,
@@ -68,13 +67,6 @@ pub async fn create_session(mut req: tide::Request<()>) -> tide::Result {
         .peer_addr()
         .map(|addr| addr.split(':').collect::<Vec<&str>>()[0]);
 
-    // GET USERS COUNTRY FROM THE IP ADDRESS
-
-    let country_code = match ip_address {
-        Some(ip_address) => get_country_from_ip(ip_address).await,
-        None => UNKNOWN_COUNTRY.to_string(),
-    };
-
     // INSERT NEW SESSION INTO SESSIONS TABLE
 
     let session_id = get_random_string(CONFIG.session_id_length);
@@ -84,7 +76,7 @@ pub async fn create_session(mut req: tide::Request<()>) -> tide::Result {
 
     let query = sqlx::query!(
         r#"
-            INSERT INTO sessions (id, account_id, device_name, device_description, device_type, country_code, expire_date, created_at)
+            INSERT INTO sessions (id, account_id, device_name, device_description, device_type, ip_address, expire_date, created_at)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         "#,
         session_id,
@@ -92,7 +84,7 @@ pub async fn create_session(mut req: tide::Request<()>) -> tide::Result {
         body.device_name,
         body.device_description,
         device_type.to_string(),
-        country_code,
+        ip_address,
         expire_date,
         created_at
     );
@@ -147,9 +139,24 @@ pub async fn delete_session(req: tide::Request<()>) -> tide::Result {
 
     let session = session_token.session;
 
-    // GET ACCOUNT ID FROM TOKEN
+    // GET ACCOUNT ID FROM OPTIONAL PARAMS IF USER IS ADMIN
 
-    let account_id = session.account_id;
+    let account_id = match req.param("account_id") {
+        Ok(account_id) => match is_account_admin_from_id(&session.id).await {
+            Ok(is_admin) => {
+                if !is_admin {
+                    session.account_id
+                } else {
+                    account_id.to_string()
+                }
+            }
+            _ => {
+                let response = Response::new(StatusCode::InternalServerError);
+                return Ok(response);
+            }
+        },
+        _ => session.account_id,
+    };
 
     // GET THE SESSION ID TO DELETE, IF PROVIDED IN THE URL, USE THAT
     // ELSE USE THE SESSION ID FROM THE TOKEN
@@ -237,9 +244,24 @@ pub async fn get_some_sessions(req: tide::Request<()>) -> tide::Result {
 
     let session = session_token.session;
 
-    // GET SESSION AND ACCOUNT IDs FROM TOKEN
+    // GET ACCOUNT ID FROM OPTIONAL PARAMS IF USER IS ADMIN
 
-    let account_id = &session.account_id;
+    let account_id = match req.param("account_id") {
+        Ok(account_id) => match is_account_admin_from_id(&session.id).await {
+            Ok(is_admin) => {
+                if !is_admin {
+                    session.account_id
+                } else {
+                    account_id.to_string()
+                }
+            }
+            _ => {
+                let response = Response::new(StatusCode::InternalServerError);
+                return Ok(response);
+            }
+        },
+        _ => session.account_id,
+    };
 
     // GET SOME SESSIONS FROM SESSIONS TABLE WHERE ACCOUNT ID MATCH
 
@@ -267,7 +289,7 @@ pub async fn get_some_sessions(req: tide::Request<()>) -> tide::Result {
             device_name: session.device_name,
             device_description: session.device_description,
             device_type: DeviceType::from_str(&session.device_type).unwrap_or(DeviceType::Other),
-            country_code: session.country_code,
+            ip_address: session.ip_address,
             expire_date: session.expire_date,
             created_at: session.created_at,
         })
@@ -320,7 +342,6 @@ pub async fn change_session_device_type(mut req: tide::Request<()>) -> tide::Res
 
     // GET SESSION AND ACCOUNT IDs FROM TOKEN
 
-    let session_id = session.id;
     let account_id = session.account_id;
 
     // UPDATE SESSION IN SESSIONS TABLE WHERE SESSION ID AND ACCOUNT ID MATCH
@@ -332,7 +353,7 @@ pub async fn change_session_device_type(mut req: tide::Request<()>) -> tide::Res
             WHERE id = $2 AND account_id = $3
         "#,
         body.device_type.to_string(),
-        session_id,
+        body.session_id,
         account_id
     );
 
@@ -382,7 +403,6 @@ pub async fn change_session_device_name(mut req: tide::Request<()>) -> tide::Res
 
     // GET SESSION AND ACCOUNT IDs FROM TOKEN
 
-    let session_id = session.id;
     let account_id = session.account_id;
 
     // UPDATE SESSION IN SESSIONS TABLE WHERE SESSION ID AND ACCOUNT ID MATCH
@@ -394,7 +414,68 @@ pub async fn change_session_device_name(mut req: tide::Request<()>) -> tide::Res
             WHERE id = $2 AND account_id = $3
         "#,
         body.device_name,
-        session_id,
+        body.session_id,
+        account_id
+    );
+
+    let result = query.execute(&mut *transaction).await?;
+
+    if result.rows_affected() != 1 {
+        let response = Response::new(StatusCode::InternalServerError);
+        return Ok(response);
+    }
+
+    // COMMIT CHANGES IN DATABASE
+
+    transaction.commit().await?;
+
+    // SEND OK RESPONSE
+
+    Ok(Response::new(StatusCode::Ok))
+}
+
+pub async fn change_session_device_description(mut req: tide::Request<()>) -> tide::Result {
+    // GET REQUEST BODY AND VALIDATE IT
+
+    let body: ChangeSessionDeviceDescriptionRequest = req.body_json().await?;
+
+    if body.validate().is_err() {
+        let mut response = Response::new(StatusCode::UnprocessableEntity);
+        response.set_error(body.validate().unwrap_err());
+        return Ok(response);
+    };
+
+    // BEGIN DATABASE TRANSACTION
+
+    let mut transaction = DATABASE_POOL.begin().await?;
+
+    // GET DECODE AND VERIFY TOKEN
+
+    let session_token = match get_decode_verify_and_return_session_token(&req).await {
+        Ok(session_token) => session_token,
+        Err(err) => {
+            let mut response = Response::new(StatusCode::Unauthorized);
+            response.set_error(err);
+            return Ok(response);
+        }
+    };
+
+    let session = session_token.session;
+
+    // GET SESSION AND ACCOUNT IDs FROM TOKEN
+
+    let account_id = session.account_id;
+
+    // UPDATE SESSION IN SESSIONS TABLE WHERE SESSION ID AND ACCOUNT ID MATCH
+
+    let query = sqlx::query!(
+        r#"
+            UPDATE sessions
+            SET device_description = $1
+            WHERE id = $2 AND account_id = $3
+        "#,
+        body.device_description,
+        body.session_id,
         account_id
     );
 

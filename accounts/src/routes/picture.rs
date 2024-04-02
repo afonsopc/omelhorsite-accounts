@@ -1,8 +1,8 @@
 use crate::error::Error;
 use crate::error::S3Error;
+use crate::get_decode_verify_and_return_session_token;
 use crate::prelude::*;
 use crate::CONFIG;
-use crate::{database::DATABASE_POOL, get_decode_verify_and_return_session_token};
 use image::ImageError;
 use s3::creds::Credentials;
 use s3::Bucket;
@@ -60,24 +60,6 @@ pub async fn upload_picture(mut req: tide::Request<()>) -> tide::Result {
     // GET ACCOUNT ID FROM TOKEN
 
     let account_id = session.account_id;
-
-    // BEGIN DATABASE TRANSACTION
-
-    let mut transaction = DATABASE_POOL.begin().await?;
-
-    // GET USER HANDLE
-
-    let query = sqlx::query!(
-        r#"
-            SELECT handle 
-            FROM accounts 
-            WHERE id = $1
-        "#,
-        account_id
-    );
-
-    let result = query.fetch_one(&mut *transaction).await?;
-    let handle = result.handle;
 
     // GET IMAGE BYTES FROM REQUEST BODY
 
@@ -141,7 +123,7 @@ pub async fn upload_picture(mut req: tide::Request<()>) -> tide::Result {
 
     // PUT IMAGE IN S3 BUCKET
 
-    let picture_name = f!("{}.webp", handle);
+    let picture_name = f!("{}.webp", account_id);
 
     match put_webp_picture_in_bucket(webp_bytes, &picture_name).await {
         Ok(_) => (),
@@ -156,66 +138,3 @@ pub async fn upload_picture(mut req: tide::Request<()>) -> tide::Result {
 
     Ok(Response::new(StatusCode::Ok))
 }
-
-// pub async fn get_picture(req: tide::Request<()>) -> tide::Result {
-//     // GET PICTURE ID FROM URL
-
-//     let picture_id: String = match req.param("picture_id") {
-//         Ok(picture_id) => picture_id.to_string(),
-//         Err(err) => {
-//             let mut response = Response::new(StatusCode::UnprocessableEntity);
-//             response.set_error(err);
-
-//             return Ok(response);
-//         }
-//     };
-//     // BEGIN DATABASE TRANSACTION
-
-//     let mut transaction = DATABASE_POOL.begin().await?;
-
-//     // GET PICTURE BY ID
-
-//     let query = sqlx::query!(
-//         r#"
-//             SELECT EXISTS(
-//                 SELECT 1
-//                 FROM accounts
-//                 WHERE picture_id = $1
-//             ) AS exists
-//         "#,
-//         picture_id
-//     );
-
-//     let result = query.fetch_one(&mut *transaction).await?;
-
-//     if let Some(false) = result.exists {
-//         transaction.rollback().await?;
-//         let response = Response::new(StatusCode::NotFound);
-//         return Ok(response);
-//     }
-
-//     // GET PICTURE BY ID
-
-//     let picture_file_path = f!("{}/{}.webp", CONFIG.pictures_directory, picture_id);
-
-//     match Path::new(&picture_file_path).is_file() {
-//         true => (),
-//         false => {
-//             transaction.rollback().await?;
-//             let response = Response::new(StatusCode::NotFound);
-//             return Ok(response);
-//         }
-//     }
-
-//     let picture_bytes = std::fs::read(picture_file_path)?;
-
-//     // CREATE A RESPONSE WITH THE PICTURE BYTES
-//     // AND THE CORRECT CONTENT TYPE
-
-//     let response = Response::builder(StatusCode::Ok)
-//         .body(picture_bytes)
-//         .content_type("image/webp")
-//         .build();
-
-//     Ok(response)
-// }

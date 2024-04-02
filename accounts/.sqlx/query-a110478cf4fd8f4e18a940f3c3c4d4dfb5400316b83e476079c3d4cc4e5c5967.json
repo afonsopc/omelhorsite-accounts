@@ -40,7 +40,7 @@
       },
       {
         "ordinal": 7,
-        "name": "country_code",
+        "name": "ip_address",
         "type_info": "Text"
       }
     ],

@@ -54,6 +54,15 @@ pub enum S3Error {
 }
 
 #[derive(Debug, thiserror::Error)]
+pub enum DatabaseError {
+    #[error("Failed to fetch row")]
+    FetchOne(String),
+
+    #[error("Row not found")]
+    RowNotFound,
+}
+
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
     Email(EmailError),
@@ -66,4 +75,7 @@ pub enum Error {
 
     #[error(transparent)]
     S3(S3Error),
+
+    #[error(transparent)]
+    Database(DatabaseError),
 }
