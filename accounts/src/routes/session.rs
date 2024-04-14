@@ -107,7 +107,7 @@ pub async fn create_session(mut req: tide::Request<()>) -> tide::Result {
 
     let session_token = SessionToken {
         session,
-        exp: expire_date.timestamp() as usize,
+        exp: expire_date.and_utc().timestamp() as usize,
     };
 
     let token = Token {

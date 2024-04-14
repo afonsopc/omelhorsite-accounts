@@ -318,40 +318,22 @@ pub struct AccountInfoChangeRequest {
 // Region: Account Get Request Models
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AccountsSortBy {
-    pub id: Option<bool>,
-    pub handle: Option<bool>,
-    pub name: Option<bool>,
-    pub email: Option<bool>,
-    pub email_is_public: Option<bool>,
-    pub group: Option<bool>,
-    pub gender: Option<bool>,
-    pub gender_is_public: Option<bool>,
-    pub country_code: Option<bool>,
-    pub created_at: Option<bool>,
+pub struct GetAllAccountsAccount {
+    pub id: String,
+    pub handle: String,
+    pub name: String,
+    pub email: String,
+    pub group: Group,
+    pub gender: Gender,
+    pub email_is_public: bool,
+    pub gender_is_public: bool,
+    pub country_code: String,
+    pub created_at: NaiveDateTime,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AccountsKeyword {
-    pub id: Option<String>,
-    pub handle: Option<String>,
-    pub name: Option<String>,
-    pub email: Option<String>,
-    pub group: Option<Group>,
-    pub gender: Option<Gender>,
-    pub email_is_public: Option<bool>,
-    pub gender_is_public: Option<bool>,
-    pub country_code: Option<String>,
-    pub created_at: Option<NaiveDateTime>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GetSomeAccountsRequest {
-    pub starting_index: usize,
-    pub ending_index: usize,
-    pub order_ascending: Option<bool>,
-    pub sort_by: Option<AccountsSortBy>,
-    pub keyword: Option<AccountsKeyword>,
+pub struct GetAllAccountsResponse {
+    pub accounts: Vec<GetAllAccountsAccount>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
