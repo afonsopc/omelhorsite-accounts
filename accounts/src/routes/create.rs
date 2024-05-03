@@ -1,15 +1,8 @@
 use crate::{
-    config::CONFIG,
-    database::DATABASE_POOL,
-    email::send_email,
-    encryption,
-    models::{
+    config::CONFIG, database::DATABASE_POOL, email::send_email, encryption, models::{
         Account, AccountCreationVerification, BeginAccountCreationRequest, ConflictString,
         FinishAccountCreationRequest, Group,
-    },
-    prelude::*,
-    random::{get_random_numbers, get_random_string},
-    string_to_email_placeholder,
+    }, prelude::*, random::{get_random_numbers, get_random_string}, sanitize_handle, string_to_email_placeholder
 };
 use chrono::Utc;
 use tide::{convert::json, Response, StatusCode};
@@ -26,7 +19,19 @@ pub async fn begin_account_creation(mut req: tide::Request<()>) -> tide::Result 
         return Ok(response);
     };
 
-    body.handle = body.handle.to_lowercase();
+    body.handle = match sanitize_handle(&body.handle) {
+        Ok(handle) => handle,
+        Err(err) => {
+            let mut response = Response::new(StatusCode::InternalServerError);
+            response.set_error(err);
+            return Ok(response);
+        }
+    };
+
+    if body.handle.is_empty() {
+        let response = Response::new(StatusCode::UnprocessableEntity);
+        return Ok(response);
+    }
 
     // BEGIN DATABASE TRANSACTION
 
@@ -151,8 +156,22 @@ pub async fn finish_account_creation(mut req: tide::Request<()>) -> tide::Result
         return Ok(response);
     };
 
-    body.handle = body.handle.to_lowercase();
-    body.country_code = body.country_code.to_lowercase();
+    body.handle = match sanitize_handle(&body.handle) {
+        Ok(handle) => handle,
+        Err(err) => {
+            let mut response = Response::new(StatusCode::InternalServerError);
+            response.set_error(err);
+            return Ok(response);
+        }
+    };
+
+    if body.handle.is_empty() {
+        let response = Response::new(StatusCode::UnprocessableEntity);
+        return Ok(response);
+    }
+
+    body.name = body.name.trim().to_string();
+    body.country_code = body.country_code.to_lowercase().trim().to_string();
 
     // BEGIN DATABASE TRANSACTION
 

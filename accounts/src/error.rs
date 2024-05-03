@@ -78,4 +78,7 @@ pub enum Error {
 
     #[error(transparent)]
     Database(DatabaseError),
+
+    #[error(transparent)]
+    Regex(regex::Error),
 }

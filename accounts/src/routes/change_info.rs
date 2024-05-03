@@ -1,6 +1,6 @@
 use crate::{
     database::DATABASE_POOL, get_decode_verify_and_return_session_token,
-    models::AccountInfoChangeRequest,
+    models::AccountInfoChangeRequest, sanitize_handle,
 };
 use tide::{Response, StatusCode};
 use validator::Validate;
@@ -16,11 +16,24 @@ pub async fn info_change(mut req: tide::Request<()>) -> tide::Result {
         return Ok(response);
     };
 
-    body.handle = body.handle.map(|handle| handle.to_lowercase());
-    body.name = body.name.map(|name| name.to_lowercase());
+    body.handle = body.handle.map(|handle| {
+        match sanitize_handle(&handle) {
+            Ok(handle) => {
+                if handle.is_empty() {
+                    None
+                } else {
+                    Some(handle)
+                }
+            },
+            Err(_) => {
+                None
+            }
+        }
+    }).flatten();
+    body.name = body.name.map(|name| name.trim().to_string());
     body.country_code = body
         .country_code
-        .map(|country_code| country_code.to_lowercase());
+        .map(|country_code| country_code.to_lowercase().trim().to_string());
 
     // BEGIN DATABASE TRANSACTION
 

@@ -2,7 +2,7 @@
 FROM rust AS dependency-builder
 
 WORKDIR /app
-COPY ./Cargo.toml ./
+COPY ./accounts/Cargo.toml ./
 
 ## Create a dummy main.rs to build dependencies
 RUN mkdir ./src
@@ -15,7 +15,7 @@ FROM rust AS application-builder
 
 WORKDIR /app
 
-COPY . .
+COPY ./accounts .
 
 COPY --from=dependency-builder /app/target ./target
 COPY --from=dependency-builder /app/Cargo.toml ./Cargo.toml

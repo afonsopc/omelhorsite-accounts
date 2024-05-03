@@ -22,6 +22,7 @@ use crate::{
 use dotenv::dotenv;
 use error::{DatabaseError, Error, TokenError};
 use models::{Group, SessionToken};
+use regex::Regex;
 use sqlx::migrate;
 use tide::{
     http::headers::HeaderValue,
@@ -38,6 +39,14 @@ pub mod prelude;
 pub mod random;
 pub mod routes;
 pub mod token;
+
+pub fn sanitize_handle(handle: &str) -> Result<String> {
+    let handle_regex = Regex::new(r"^[a-zA-Z0-9_]+$").map_err(
+        |err| Error::Regex(err)
+    )?;
+
+    Ok(handle_regex.replace_all(handle.to_lowercase().trim(), "").to_string())
+}
 
 pub async fn is_account_admin_from_id(id: &str) -> Result<bool> {
     let query = sqlx::query!(
@@ -192,6 +201,11 @@ async fn main() -> Result<()> {
                 .unwrap(),
         )
         .allow_origin(Origin::from("*"))
+        .allow_headers(
+            "Authorization"
+                .parse::<HeaderValue>()
+                .unwrap(),
+        )
         .allow_credentials(false);
 
     // Create the server
