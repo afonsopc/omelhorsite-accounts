@@ -41,11 +41,11 @@ pub mod routes;
 pub mod token;
 
 pub fn sanitize_handle(handle: &str) -> Result<String> {
-    let handle_regex = Regex::new(r"^[a-zA-Z0-9_]+$").map_err(
-        |err| Error::Regex(err)
-    )?;
+    let handle_regex = Regex::new(r"^[a-zA-Z0-9_]+$").map_err(|err| Error::Regex(err))?;
 
-    Ok(handle_regex.replace_all(handle.to_lowercase().trim(), "").to_string())
+    Ok(handle_regex
+        .replace_all(handle.to_lowercase().trim(), "")
+        .to_string())
 }
 
 pub async fn is_account_admin_from_id(id: &str) -> Result<bool> {
@@ -202,7 +202,7 @@ async fn main() -> Result<()> {
         )
         .allow_origin(Origin::from("*"))
         .allow_headers(
-            "Authorization"
+            "Content-Type, Authorization, Origin, Accept, X-Requested-With"
                 .parse::<HeaderValue>()
                 .unwrap(),
         )
