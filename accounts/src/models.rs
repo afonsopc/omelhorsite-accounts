@@ -313,6 +313,13 @@ pub struct AccountInfoChangeRequest {
     pub country_code: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct AdminAccountInfoChangeRequest {
+    #[validate(length(min = 1), custom = "validate_account_id_length")]
+    pub account_id: String,
+    pub info_to_change: AccountInfoChangeRequest,
+}
+
 // End region: Account Info Change Request Models
 
 // Region: Account Get Request Models

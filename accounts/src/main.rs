@@ -23,6 +23,7 @@ use dotenv::dotenv;
 use error::{DatabaseError, Error, TokenError};
 use models::{Group, SessionToken};
 use regex::Regex;
+use routes::change_info::admin_info_change;
 use sqlx::migrate;
 use tide::{
     http::headers::HeaderValue,
@@ -219,11 +220,11 @@ async fn main() -> Result<()> {
     app.at("/delete/begin").post(begin_account_deletion);
     app.at("/delete/finish").post(finish_account_deletion);
     app.at("/change").patch(info_change);
+    app.at("/admin/change").patch(admin_info_change);
     app.at("/admin/accounts").get(get_all_accounts);
     app.at("/admin/change/group").patch(admin_group_change);
     app.at("/admin/change/email").patch(admin_email_change);
     app.at("/admin/delete").patch(admin_account_deletion);
-    app.at("/admin/accounts").patch(get_all_accounts);
     app.at("/admin/change/password")
         .patch(admin_password_change);
     app.at("/change/email/begin").post(begin_email_change);

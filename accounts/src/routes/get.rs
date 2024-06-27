@@ -69,19 +69,7 @@ pub async fn get_account(req: tide::Request<()>) -> tide::Result {
     ) {
         (Some(session_token), Some(id), _) => {
             let session = session_token.session;
-            let is_admin = match is_account_admin_from_id(&id).await {
-                Ok(is_admin) => is_admin,
-                Err(Error::Database(DatabaseError::RowNotFound)) => {
-                    transaction.rollback().await?;
-                    let response = Response::new(StatusCode::NotFound);
-                    return Ok(response);
-                }
-                Err(_) => {
-                    transaction.rollback().await?;
-                    let response = Response::new(StatusCode::InternalServerError);
-                    return Ok(response);
-                }
-            };
+            let is_admin = is_account_admin_from_id(&session.account_id).await.unwrap_or(false);
 
             ((session.account_id == id || is_admin), id)
         }
@@ -102,19 +90,7 @@ pub async fn get_account(req: tide::Request<()>) -> tide::Result {
                 }
             };
 
-            let is_admin = match is_account_admin_from_id(&id).await {
-                Ok(is_admin) => is_admin,
-                Err(Error::Database(DatabaseError::RowNotFound)) => {
-                    transaction.rollback().await?;
-                    let response = Response::new(StatusCode::NotFound);
-                    return Ok(response);
-                }
-                Err(_) => {
-                    transaction.rollback().await?;
-                    let response = Response::new(StatusCode::InternalServerError);
-                    return Ok(response);
-                }
-            };
+            let is_admin = is_account_admin_from_id(&session.account_id).await.unwrap_or(false);
 
             ((session.account_id == id || is_admin), id)
         }
