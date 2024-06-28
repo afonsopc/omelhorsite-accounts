@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM sessions\n            WHERE account_id = (\n                SELECT id\n                FROM accounts\n                WHERE email = $1\n            );\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e1b8d931dffdb78d0929c2905d3ecd9046be33e744bb291f1cb1fb318f25579b"
+}

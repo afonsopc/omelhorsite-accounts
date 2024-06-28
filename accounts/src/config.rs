@@ -132,8 +132,14 @@ pub struct Config {
     #[envconfig(from = "ACCOUNT_PASSWORD_CHANGE_VERIFICATION_SUBJECT")]
     pub account_password_change_verification_subject: String,
 
-    #[envconfig(from = "ACCOUNT_PASSWORD_CHANGE_VERIFICATION_BODY")]
-    pub account_password_change_verification_body: String,
+    #[envconfig(from = "ACCOUNT_FORGOT_PASSWORD_VERIFICATION_HTML")]
+    pub account_forgot_password_verification_html: bool,
+
+    #[envconfig(from = "ACCOUNT_FORGOT_PASSWORD_VERIFICATION_SUBJECT")]
+    pub account_forgot_password_verification_subject: String,
+
+    #[envconfig(from = "ACCOUNT_FORGOT_PASSWORD_VERIFICATION_BODY")]
+    pub account_forgot_password_verification_body: String,
 
     #[envconfig(from = "ACCOUNT_DELETION_VERIFICATION_HTML")]
     pub account_deletion_verification_html: bool,

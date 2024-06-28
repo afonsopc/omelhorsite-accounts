@@ -19,7 +19,7 @@ pub async fn admin_info_change(mut req: tide::Request<()>) -> tide::Result {
 
     match get_decode_verify_and_return_session_token(&req).await {
         Ok(session_token) => {
-            if is_account_admin_from_id(&session_token.session.account_id).await.unwrap_or(false) {
+            if !is_account_admin_from_id(&session_token.session.account_id).await.unwrap_or(false) {
                 let response = Response::new(StatusCode::Unauthorized);
                 return Ok(response);
             }

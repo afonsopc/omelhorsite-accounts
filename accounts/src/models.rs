@@ -274,6 +274,20 @@ pub struct AdminPasswordChangeRequest {
     pub password: String,
 }
 
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct BeginForgotPasswordRequest {
+    #[validate(email)]
+    pub email: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct FinishForgotPasswordRequest {
+    pub email: String,
+    pub verification_code: String,
+    pub new_password: String,
+}
+
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct FinishPasswordChangeRequest {
     #[validate(length(min = 1))]

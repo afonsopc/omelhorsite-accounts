@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT new_password_verification_code, new_password_verification_code_created_at\n            FROM accounts\n            WHERE email = $1;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "new_password_verification_code",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "new_password_verification_code_created_at",
+        "type_info": "Timestamp"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "33f6f5c0934628b2569881cdac128ba3964c7f07dc6e7ea95bda22d81a13b8f1"
+}

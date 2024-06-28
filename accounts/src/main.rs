@@ -23,7 +23,7 @@ use dotenv::dotenv;
 use error::{DatabaseError, Error, TokenError};
 use models::{Group, SessionToken};
 use regex::Regex;
-use routes::change_info::admin_info_change;
+use routes::{change_info::admin_info_change, change_password::{begin_forgot_password, finish_forgot_password}};
 use sqlx::migrate;
 use tide::{
     http::headers::HeaderValue,
@@ -216,6 +216,8 @@ async fn main() -> Result<()> {
     app.with(cors);
     app.at("/").get(root::root);
     app.at("/account").get(get_account);
+    app.at("/forgot-password/begin").post(begin_forgot_password);
+    app.at("/forgot-password/finish").post(finish_forgot_password);
     app.at("/admin").get(get_is_admin);
     app.at("/delete/begin").post(begin_account_deletion);
     app.at("/delete/finish").post(finish_account_deletion);
