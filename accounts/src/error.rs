@@ -63,6 +63,12 @@ pub enum DatabaseError {
 }
 
 #[derive(Debug, thiserror::Error)]
+pub enum SanitizeError {
+    #[error("Failed to sanitize handle")]
+    Handle(String),
+}
+
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
     Email(EmailError),
@@ -81,4 +87,7 @@ pub enum Error {
 
     #[error(transparent)]
     Regex(regex::Error),
+
+    #[error(transparent)]
+    Sanitize(SanitizeError),
 }

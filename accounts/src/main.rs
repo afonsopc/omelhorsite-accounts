@@ -20,7 +20,7 @@ use crate::{
     },
 };
 use dotenv::dotenv;
-use error::{DatabaseError, Error, TokenError};
+use error::{DatabaseError, Error, SanitizeError, TokenError};
 use models::{Group, SessionToken};
 use regex::Regex;
 use routes::{change_info::admin_info_change, change_password::{begin_forgot_password, finish_forgot_password}};
@@ -42,11 +42,21 @@ pub mod routes;
 pub mod token;
 
 pub fn sanitize_handle(handle: &str) -> Result<String> {
-    let handle_regex = Regex::new(r"^[a-zA-Z0-9_]+$").map_err(|err| Error::Regex(err))?;
+    let handle_regex = Regex::new(r"^[a-zA-Z0-9_]+$").map_err(
+        |err| Error::Regex(err)
+    )?;
 
-    Ok(handle_regex
-        .replace_all(handle.to_lowercase().trim(), "")
-        .to_string())
+    let handle_lower = handle.to_lowercase();
+    let handle_trimmed = handle_lower.trim();
+
+    // Check if the handle matches the regex pattern
+    if handle_regex.is_match(handle_trimmed) {
+        // If it matches, return the trimmed, lowercase handle
+        Ok(handle_trimmed.to_string())
+    } else {
+        // If it doesn't match, return an error
+        Err(Error::Sanitize(SanitizeError::Handle("Handle contains invalid characters".to_string())))
+    }
 }
 
 pub async fn is_account_admin_from_id(id: &str) -> Result<bool> {

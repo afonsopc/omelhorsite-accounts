@@ -185,6 +185,7 @@ pub async fn finish_forgot_password(mut req: tide::Request<()>) -> tide::Result 
 
     let body: FinishForgotPasswordRequest = req.body_json().await?;
 
+
     if body.validate().is_err() {
         let mut response = Response::new(StatusCode::UnprocessableEntity);
         response.set_error(body.validate().unwrap_err());
@@ -279,13 +280,7 @@ pub async fn finish_forgot_password(mut req: tide::Request<()>) -> tide::Result 
         body.email,
     );
 
-    let result = query.execute(&mut *transaction).await?;
-
-    if result.rows_affected() < 1 {
-        transaction.rollback().await?;
-        let response = Response::new(StatusCode::InternalServerError);
-        return Ok(response);
-    }
+    query.execute(&mut *transaction).await?;
 
     // FINALY COMMIT TRANSACTION
 

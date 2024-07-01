@@ -63,7 +63,10 @@ pub async fn create_session(mut req: tide::Request<()>) -> tide::Result {
 
     // GET USERS COUNTRY FROM THE IP ADDRESS
 
-    let ip_address = req.header("X-Forwarded-For").map(|value| value.as_str());
+    let ip_address = req
+        .header("X-Forwarded-For")
+        .map(|value| value.as_str())
+        .unwrap_or("127.0.0.1");
 
     // INSERT NEW SESSION INTO SESSIONS TABLE
 
